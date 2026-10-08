@@ -10,6 +10,9 @@ use serde_json::Value;
 use tpt_commercial_cli::exit;
 use tpt_policy_core::{evaluate, parse_policy, run_tests, Decision, Evaluation, Policy};
 
+mod doctor;
+mod serve;
+
 #[derive(Parser)]
 #[command(
     name = "tpt-policy",
@@ -45,6 +48,19 @@ enum Command {
     Run { policy: PathBuf },
     /// Run the inline tests defined in the policy file
     Test { policy: PathBuf },
+    /// Serve evaluations over HTTP (POST /v1/evaluate)
+    Serve {
+        policy: PathBuf,
+        /// Address to listen on. Defaults to localhost only.
+        #[arg(long, default_value = "127.0.0.1:8080")]
+        listen: String,
+        /// Bearer token required on POST /v1/evaluate. Read from TPT_POLICY_TOKEN
+        /// so it does not appear in shell history.
+        #[arg(long, env = "TPT_POLICY_TOKEN", hide_env_values = true)]
+        token: Option<String>,
+    },
+    /// Check that this install works
+    Doctor,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -80,7 +96,37 @@ fn main() -> ExitCode {
         } => decide(&policy, &input, format, true),
         Command::Run { policy } => decide(&policy, Path::new("-"), Format::Json, false),
         Command::Test { policy } => run_policy_tests(&policy),
+        Command::Serve {
+            policy,
+            listen,
+            token,
+        } => serve_policy(&policy, &listen, token),
+        Command::Doctor => ExitCode::from(doctor::run()),
     }
+}
+
+fn serve_policy(path: &Path, listen: &str, token: Option<String>) -> ExitCode {
+    let policy = match load_policy(path) {
+        Ok(p) => p,
+        Err(code) => return code,
+    };
+    if token.is_none() && !is_loopback(listen) {
+        eprintln!(
+            "warning: listening on {listen} without a token; anyone who can reach this address can evaluate policies. Set TPT_POLICY_TOKEN or listen on 127.0.0.1."
+        );
+    }
+    match serve::serve(policy, listen, token) {
+        Ok(()) => ExitCode::from(exit::SUCCESS),
+        Err(e) => {
+            eprintln!("error: cannot serve on {listen}: {e}\n  fix: check the address is valid and the port is free");
+            ExitCode::from(exit::IO_ERROR)
+        }
+    }
+}
+
+fn is_loopback(listen: &str) -> bool {
+    let host = listen.rsplit_once(':').map_or(listen, |(host, _)| host);
+    matches!(host, "127.0.0.1" | "localhost" | "[::1]" | "::1")
 }
 
 fn load_policy(path: &Path) -> Result<Policy, ExitCode> {

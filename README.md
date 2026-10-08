@@ -62,6 +62,26 @@ Exit code `10`. See the exit code table below.
 | `tpt-policy explain <policy> <input>` | Print a readable explanation, including failed rules. Add `--format json` for JSON. |
 | `tpt-policy run <policy>` | Read JSON from stdin, print the decision as JSON. |
 | `tpt-policy test <policy>` | Run the `tests:` block in the policy file. |
+| `tpt-policy serve <policy>` | Serve evaluations over HTTP. See below. |
+| `tpt-policy doctor` | Check that this install works. |
+
+### HTTP service
+
+```sh
+TPT_POLICY_TOKEN=change-me tpt-policy serve expense.yaml --listen 127.0.0.1:8080
+
+curl -X POST http://127.0.0.1:8080/v1/evaluate \
+  -H "Authorization: Bearer change-me" \
+  -H "Content-Type: application/json" \
+  -d '{"expense": {"amount": 6200}}'
+```
+
+- `POST /v1/evaluate` takes the input JSON and returns the same JSON as `check`.
+- `GET /healthz` returns `{"status": "ok"}` and needs no token.
+- Listens on `127.0.0.1` by default. Listening on another address without a token prints a warning.
+- Request bodies over 1 MB are rejected with 413.
+- Errors are JSON with `what`, `why` and `fix`.
+- Single-threaded and intended for local or internal use, not for direct exposure to the internet.
 
 ## Decisions
 
@@ -101,6 +121,7 @@ Field paths use dots (`expense.amount`). Numbers index into lists (`items.0.sku`
 | `2` | Invalid policy or command line |
 | `3` | Input is not valid JSON |
 | `4` | One or more inline tests failed |
+| `5` | `doctor` found a failing check |
 
 ## Examples
 

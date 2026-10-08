@@ -22,8 +22,8 @@ Source: `spec.txt` (section refs in parentheses). Tick boxes as you go: `- [x]`.
 - [x] Missing field behaviour — implemented: any check on a missing or null field fails, except `exists: false`
 - [x] Decision when no rule matches — implemented: optional `default_decision`, defaults to `review` (fails safe; the spec gives no default)
 - [x] Exit-code table — implemented: 0 approved/success, 10 approval_required, 20 review, 30 rejected, 1 file read, 2 invalid policy or usage, 3 invalid input JSON, 4 test failed. Documented in README.md
-- [ ] REST server crate — default: axum, optional `--token` bearer auth
-- [ ] Which crates to reuse from TPT-Solutions vs. write fresh (decide after audit in Phase 2)
+- [x] REST server crate — changed from the default axum to `tiny_http` (synchronous, no async runtime, fewer dependencies). Bearer token optional, read from `TPT_POLICY_TOKEN`
+- [x] Which crates to reuse from TPT-Solutions vs. write fresh — decided: `tpt-policy-core` stays independent of `tpt-runtime-policy` and `tpt-mcpbox-policy`. Keeps the commercial core small and stable (§33).
 - [ ] Product pricing/tiers: Standard + Commercial only (§27–28)
 
 ## Phase 0 — Workspace & shared groundwork
@@ -96,18 +96,18 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [ ] Integrate tpt-primitives (types/IDs/deterministic representations)
 - [ ] Integrate tpt-capsec (capability model)
 - [ ] Integrate tpt-runtime (lifecycle, resource limits)
-- [ ] Integrate tpt-wasm (WASM sandbox). Before embedding: run `cargo deny` on its dependency tree to check third-party licences (the tpt-wasm licence itself is MIT OR Apache-2.0).
+- [~] Integrate tpt-wasm (WASM sandbox). **Checked:** tpt-wasm is MIT OR Apache-2.0. Its only third-party dependency is `wast` (Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT), used only by `tpt-wasm-spec`, a spec test harness. So a product that does not depend on `tpt-wasm-spec` picks up no third-party licence issue. Re-run `cargo deny` on the final dependency tree before embedding.
 - [ ] Resource limits (time, memory, input size)
 - [ ] Deterministic mode
 - [ ] Expose policy evaluation as an embeddable WASM module (§8.4)
-- [ ] REST: `tpt-policy serve`, `POST /v1/evaluate`
-- [ ] `doctor` subcommand: runtime, config, permissions, install, version, optional deps (§29.5)
+- [x] REST: `tpt-policy serve`, `POST /v1/evaluate` (plus `GET /healthz`). Localhost by default, optional bearer token, 1 MB body limit. Tested over real sockets. Single-threaded.
+- [x] `doctor` subcommand: runtime, config, permissions, install, version, optional deps (§29.5). Checks version, platform, working-directory write test, `./tpt` layout (§19, optional), and a built-in self-test. Optional-dependency checks are not needed yet, since no optional dependencies exist.
 - [ ] Signed policy bundles / release checksums via tpt-crypto (optional signatures)
-- [ ] Docker image (`tpt/app-policy`) (§25)
-- [ ] Release bundle layout (§23): bin, examples, policies, schemas, docs, LICENSE, CHANGELOG, README
+- [~] Docker image (`tpt/app-policy`) (§25). `Dockerfile` written. **Not built or tested:** Docker is not installed here.
+- [x] Release bundle layout (§23). `scripts/package.sh` builds it, with checksums. Tested on Windows (Git Bash) only. Linux and macOS not yet tested. It refuses to package without `LICENSE.txt` (see Commercial wrapper).
 - [ ] Windows x64 build + install test on a clean machine
 - [ ] Linux x64 build + install test on a clean machine
-- [ ] Checksums + release notes for each version (§40)
+- [~] Checksums + release notes for each version (§40). **Done:** `SHA256SUMS` from the packaging script, and `CHANGELOG.md`. **Missing:** signatures (optional in §40)
 
 ### Docs for 1.0 (§30)
 - [ ] README
@@ -125,7 +125,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [ ] CHANGELOG
 
 ### Commercial wrapper
-- [ ] Commercial licence text (personal eval / internal use / redistribution / modification / embedding / source) (§26)
+- [ ] Commercial licence text (personal eval / internal use / redistribution / modification / embedding / source) (§26). **Blocks release packaging:** `LICENSE.txt` is missing, and the packaging script refuses to build a distributable bundle without it. This is a legal decision, so I have not written one.
 - [ ] Support-boundary statement (§43)
 - [ ] Privacy statement: no data leaves the machine (§39)
 - [ ] Landing page (§31)
