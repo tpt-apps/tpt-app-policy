@@ -1,0 +1,2539 @@
+TPT Commercial Application Portfolio
+
+Master Design Specification
+
+Project: TPT Solutions Commercial Product Portfolio
+Primary commercial model: One-time purchase, self-hosted,
+downloadable software
+Primary storefront: Gumroad
+Target developer model: Solo developer / low-support operation
+Status: Product architecture and implementation specification
+Date: 2026-10-09
+
+1. Executive Summary
+
+TPT Solutions already contains a large open-source Rust ecosystem of
+roughly 330 repositories. The commercial opportunity is not to turn that
+ecosystem into a conventional SaaS platform. The recommended strategy is
+to use the existing repositories as the technical foundation for a
+family of small, professional, self-hosted applications that solve
+narrow and valuable business problems.
+
+The commercial portfolio should be built around one shared platform:
+
+TPT Policy Core + TPT Runtime + TPT WASM/Security infrastructure
+
+The first and most important commercial application is TPT App
+Policy. The remaining products should reuse the same policy engine,
+schema system, validation framework, runtime, CLI conventions,
+packaging, licensing, documentation, and security model.
+
+The products should be:
+
+downloadable;
+
+self-hosted;
+
+usable without a TPT cloud account;
+
+usable without a recurring subscription;
+
+deterministic where practical;
+
+automatable from a CLI;
+
+scriptable through JSON/HTTP;
+
+deployable as native binaries and/or containers;
+
+useful without vendor-specific ERP integrations;
+
+bounded enough that a solo developer can maintain them.
+
+The central product-design principle is:
+
+Own the rules and execution boundary; do not own the customer's
+business systems.
+
+For example, TPT App Policy should not attempt to integrate directly
+with SAP, Xero, MYOB, NetSuite, Dynamics, Oracle, or every custom ERP.
+It should accept structured input and return a structured decision. The
+customer's existing integration layer connects those inputs and outputs
+to its systems.
+
+This dramatically reduces support requirements while preserving
+commercial value.
+
+2. Commercial Strategy
+
+2.1 Business model
+
+The preferred commercial model is:
+
+Open-source infrastructure remains useful and discoverable.
+
+Commercial products package the infrastructure into complete
+business solutions.
+
+Customers purchase perpetual licences through Gumroad.
+
+Customers download a release bundle.
+
+Customers run the software locally or inside their own
+infrastructure.
+
+Updates are released periodically.
+
+Updates can be included for a defined period or permanently,
+depending on SKU.
+
+No mandatory hosted service is required.
+
+The product should not depend on subscriptions for basic operation.
+
+2.2 Why this model fits TPT
+
+The existing TPT ecosystem has several properties that suit a
+self-hosted commercial model:
+
+Rust implementation;
+
+WASM execution;
+
+capability-oriented security;
+
+runtime/resource management;
+
+cryptographic primitives;
+
+MCP/tooling infrastructure;
+
+CLI-oriented components;
+
+deterministic execution capabilities.
+
+These are infrastructure-heavy capabilities that can be difficult for a
+small business to build internally but can be delivered as a local
+executable.
+
+2.3 Target customer
+
+The primary customer should be:
+
+A small or medium business, internal IT team, developer, consultant,
+or operations team that needs a reliable business-rule/data-processing
+utility but does not want to build it from scratch or adopt another
+SaaS platform.
+
+Secondary customers:
+
+software developers;
+
+DevOps engineers;
+
+automation consultants;
+
+compliance teams;
+
+security engineers;
+
+AI application developers.
+
+Large enterprises should not be the initial target because their
+procurement, integration, security review, and support requirements
+would undermine the solo-developer business model.
+
+3. Product Portfolio
+
+The recommended ten products are:
+
+Priority         Product          Primary buyer         Indicative price
+
+1                TPT App Policy   IT / developers             $149--499
+/ SMBs
+
+2                TPT Document     Operations /                 $79--299
+Validator        compliance
+
+3                TPT Data         Data / IT teams              $99--399
+Validator
+
+4                TPT Invoice      Finance / AP                $149--499
+Validator
+
+5                TPT Secure       Developers / IT              $99--299
+Script Runner
+
+6                TPT Data         Developers /                 $79--249
+Transformer      analysts
+
+7                TPT Approval     Operations / IT             $149--499
+Engine
+
+8                TPT Compliance   Compliance /                $199--699
+Evidence         security
+Processor
+
+9                TPT AI Action    AI developers /             $149--499
+Guard            businesses
+
+These are not intended to become ten independent engineering projects.
+
+They are ten commercial packages around a common platform.
+
+4. Existing TPT Repository Foundation
+
+The previous repository review identified the following relevant
+architecture.
+
+4.1 tpt-readme
+
+Role:
+
+ecosystem map;
+
+repository discovery;
+
+architectural orientation;
+
+documentation entry point.
+
+Commercial use:
+
+source for identifying reusable infrastructure;
+
+documentation structure;
+
+public technical funnel into commercial products.
+
+It should not itself become a commercial product.
+
+4.2 tpt-wasm
+
+Role:
+
+WASM execution;
+
+micro/runtime components;
+
+host implementation;
+
+capability handling;
+
+resources;
+
+WASI;
+
+CLI;
+
+semantics/verification;
+
+IR/code generation;
+
+JIT/AOT capabilities.
+
+The host performs capability authorization, opaque-resource handling,
+deterministic execution modes, and bindings such as
+filesystem/network/WASI.
+
+Commercial use:
+
+execution engine for TPT App Policy;
+
+sandbox for TPT Secure Script Runner;
+
+isolated policy/plugin execution;
+
+AI Action Guard enforcement;
+
+potentially customer-defined extensions.
+
+This is one of the most important infrastructure repositories in the
+portfolio.
+
+4.3 tpt-runtime
+
+Role:
+
+workload lifecycle;
+
+resource management;
+
+capability/policy concepts;
+
+runtime orchestration.
+
+Commercial use:
+
+common process/runtime layer;
+
+policy execution;
+
+job execution;
+
+lifecycle management;
+
+future background workers.
+
+4.4 tpt-mcpbox
+
+Role:
+
+MCP-related sandboxing/tool execution;
+
+consumes TPT WASM sandboxing capabilities.
+
+Commercial use:
+
+TPT AI Action Guard;
+
+safe tool execution;
+
+AI-agent permission boundaries;
+
+policy-controlled MCP operations.
+
+4.5 tpt-capsec
+
+Role:
+
+capability/security model;
+
+capability-oriented authorization.
+
+Commercial use:
+
+policy enforcement;
+
+filesystem/network/tool permissions;
+
+secure plugin execution;
+
+AI action controls.
+
+4.6 tpt-primitives
+
+Role:
+
+canonical low-level primitives;
+
+common foundational types and authorities.
+
+Commercial use:
+
+common types;
+
+schemas;
+
+IDs;
+
+deterministic representations;
+
+shared policy/runtime interfaces.
+
+4.7 tpt-crypto
+
+Role:
+
+cryptographic functionality;
+
+verification and integrity mechanisms.
+
+Commercial use:
+
+signed policy bundles;
+
+release verification;
+
+evidence integrity;
+
+audit artifacts;
+
+tamper-evident reports;
+
+future licence/entitlement mechanisms if required.
+
+4.8 tpt-archon
+
+Role:
+
+secure system boundary;
+
+isolation/security architecture.
+
+Commercial use:
+
+optional hardened execution boundary;
+
+enterprise/local deployment;
+
+secure process separation.
+
+It should not be required for the simplest product editions unless its
+complexity is justified.
+
+4.9 tpt-nexus
+
+Role:
+
+IPC/inter-process communication associated with the Archon/runtime
+architecture.
+
+Commercial use:
+
+communication between product processes;
+
+isolated worker architecture;
+
+secure local service boundaries.
+
+4.10 tpt-pwa
+
+Role:
+
+application runtime;
+
+Cortex VM/browser-oriented runtime.
+
+Commercial use:
+
+optional local UI;
+
+embedded application experiences;
+
+future desktop/browser interfaces.
+
+It should not be allowed to complicate the initial CLI-first product
+architecture.
+
+4.11 tpt-gpu
+
+Role:
+
+GPU/device layer.
+
+Commercial use:
+
+not required for the first commercial portfolio;
+
+reserve for future high-performance data processing or specialised
+products.
+
+4.12 tpt-vertex
+
+Role:
+
+GPU/device-related abstraction.
+
+Commercial use:
+
+future high-performance workloads;
+
+not part of the initial commercial MVP.
+
+4.13 tpt-production
+
+Role:
+
+production-oriented TPT ecosystem components.
+
+Commercial use:
+
+deployment/build/release support;
+
+operational packaging where applicable.
+
+4.14 tpt-control
+
+Role:
+
+control-oriented infrastructure.
+
+Commercial use:
+
+potentially useful for orchestration and future administrative
+interfaces;
+
+should only be pulled into commercial products when there is a clear
+product requirement.
+
+4.15 tpt-materials
+
+Role:
+
+domain-specific effective material properties;
+
+energy, transport, electronics and medical-domain modelling.
+
+Commercial use:
+
+not part of the first ten business utilities;
+
+potentially valuable later as a domain-specific commercial
+application.
+
+5. Shared Commercial Architecture
+
+The portfolio should converge on the following logical architecture:
+
+                    TPT COMMERCIAL PLATFORM
+                             |
+                    +--------+--------+
+                    |                 |
+              TPT Policy Core    TPT Schema Core
+                    |                 |
+          +---------+---------+-------+--------+
+          |         |         |                |
+      Validator Transformer Approval       Document
+          |         |         |              Engine
+          +---------+---------+----------------+
+                             |
+                       TPT Runtime
+                             |
+                  +----------+----------+
+                  |                     |
+             TPT WASM              TPT CapSec
+                  |                     |
+                  +----------+----------+
+                             |
+                       Product CLI/API
+                             |
+              +--------------+--------------+
+              |              |              |
+             CLI          REST/HTTP      WASM API
+              |              |              |
+              +--------------+--------------+
+                             |
+                    Customer systems
+
+The customer systems remain outside the platform.
+
+Examples:
+
+ERP -> JSON -> TPT App Policy -> JSON -> ERP
+CSV -> TPT Data Validator -> report
+Invoice -> TPT Invoice Validator -> PASS/REVIEW/REJECT
+AI Agent -> TPT AI Action Guard -> MCP/tool
+Plugin -> TPT Secure Script Runner -> controlled execution
+
+6. Core Design Principle: JSON Boundary
+
+The commercial products should use structured data boundaries.
+
+The canonical boundary should be JSON initially.
+
+Example:
+
+{
+  "supplier": {
+    "id": "SUP-123",
+    "status": "active"
+  },
+  "amount": 7200,
+  "currency": "NZD"
+}
+
+A policy returns:
+
+{
+  "decision": "approval_required",
+  "rules_triggered": [
+    "require-approval"
+  ]
+}
+
+This boundary is critical.
+
+It means the product does not need native knowledge of:
+
+SAP;
+
+Oracle;
+
+NetSuite;
+
+Xero;
+
+MYOB;
+
+Microsoft Dynamics;
+
+Salesforce;
+
+custom ERPs;
+
+proprietary databases.
+
+The customer's existing application or integration system is responsible
+for translating its native representation into the TPT input format.
+
+7. TPT Policy Core
+
+7.1 Purpose
+
+The Policy Core is the central commercial capability.
+
+It evaluates structured input against deterministic rules and produces a
+structured decision.
+
+7.2 Example policy
+
+policy: purchase-order
+
+rules:
+
+  - name: require-approval
+    when:
+      amount:
+        gt: 5000
+    then:
+      decision: approval_required
+
+  - name: block-supplier
+    when:
+      supplier.status:
+        equals: blocked
+    then:
+      decision: rejected
+
+  - name: require-three-quotes
+    when:
+      amount:
+        gt: 10000
+    then:
+      decision: approval_required
+      requirement: three_quotes
+
+7.3 Evaluation model
+
+A policy should produce:
+
+decision;
+
+matched rules;
+
+failed checks;
+
+warnings;
+
+requirements;
+
+structured explanation;
+
+optional audit information.
+
+Example:
+
+{
+  "decision": "approval_required",
+  "matched_rules": [
+    "require-approval"
+  ],
+  "requirements": [
+    "manager_approval"
+  ],
+  "policy_version": "1.2.0"
+}
+
+7.4 Determinism
+
+Where practical, the engine must be deterministic.
+
+Given:
+
+same input
++
+same policy
++
+same policy version
++
+same configuration
+
+the engine should produce the same result.
+
+This makes it appropriate for:
+
+compliance;
+
+auditing;
+
+financial validation;
+
+approvals;
+
+automated workflows.
+
+8. TPT App Policy
+
+8.1 Product statement
+
+Define and enforce business rules in one portable policy engine.
+
+8.2 Target buyer
+
+SMB IT departments;
+
+internal developers;
+
+software teams;
+
+consultants;
+
+automation developers.
+
+8.3 MVP
+
+The MVP must include:
+
+policy YAML;
+
+JSON input;
+
+JSON output;
+
+policy validation;
+
+CLI;
+
+deterministic evaluation;
+
+rule matching;
+
+logical conditions;
+
+numeric comparisons;
+
+string comparisons;
+
+lists;
+
+nested objects;
+
+AND/OR conditions;
+
+decision output;
+
+matched-rule reporting;
+
+policy versioning;
+
+exit codes.
+
+8.4 Interfaces
+
+CLI:
+
+tpt-policy validate policy.yaml
+tpt-policy check policy.yaml input.json
+tpt-policy explain policy.yaml input.json
+
+REST:
+
+POST /v1/evaluate
+
+stdin/stdout:
+
+cat input.json | tpt-policy run policy.yaml
+
+Docker:
+
+docker run tpt/app-policy
+
+WASM:
+
+expose policy evaluation as an embeddable module where practical.
+
+8.5 Explicit non-goals
+
+The MVP must not include:
+
+ERP-specific connectors;
+
+cloud accounts;
+
+hosted dashboards;
+
+customer databases;
+
+email infrastructure;
+
+workflow SaaS;
+
+user management;
+
+multi-tenant infrastructure.
+
+Those features increase support cost without improving the core
+proposition.
+
+9. TPT Data Validator
+
+9.1 Product statement
+
+Validate CSV, JSON and structured business data before importing it
+into another system.
+
+9.2 MVP
+
+Inputs:
+
+CSV;
+
+JSON;
+
+JSON Lines.
+
+Outputs:
+
+validated data;
+
+invalid records;
+
+error report;
+
+summary report;
+
+optional HTML report.
+
+Example:
+
+tpt-data validate customers.csv \
+  --schema customer.schema.yaml
+
+Output:
+
+1,247 records processed
+
+1,218 valid
+29 invalid
+
+Row 182:
+  email: invalid email
+
+Row 419:
+  country: unsupported value
+
+Row 782:
+  customer_id: duplicate
+
+9.3 Reuse
+
+Uses:
+
+Policy Core;
+
+Schema Core;
+
+TPT Runtime;
+
+TPT primitives;
+
+CLI infrastructure.
+
+10. TPT Document Validator
+
+10.1 Product statement
+
+Validate business documents before they enter operational systems.
+
+Possible document types:
+
+invoices;
+
+purchase orders;
+
+supplier records;
+
+customer records;
+
+shipping records;
+
+custom JSON/XML documents.
+
+10.2 Architecture
+
+document
+   |
+parser
+   |
+schema
+   |
+policy
+   |
+validation
+   |
+report
+
+10.3 Output
+
+The application should produce:
+
+PASS;
+
+FAIL;
+
+REVIEW;
+
+plus detailed validation errors.
+
+11. TPT Invoice Validator
+
+11.1 Product statement
+
+Verify invoices before they enter accounting or ERP systems.
+
+11.2 Validation pipeline
+
+invoice
+   |
+schema validation
+   |
+line-item validation
+   |
+subtotal validation
+   |
+tax validation
+   |
+total validation
+   |
+supplier validation
+   |
+duplicate detection
+   |
+business policy
+   |
+PASS / REVIEW / REJECT
+
+11.3 Important scope boundary
+
+Do not build direct integrations initially.
+
+Instead support:
+
+JSON;
+
+CSV;
+
+XML;
+
+command line;
+
+REST;
+
+import/export files.
+
+The customer connects it to their accounting system.
+
+12. TPT Secure Script Runner
+
+12.1 Product statement
+
+Run untrusted WASM programs with explicit permissions and controlled
+resources.
+
+12.2 Architecture
+
+script/plugin
+      |
+TPT WASM
+      |
+TPT CapSec
+      |
+TPT Runtime
+      |
+approved capabilities
+
+Example:
+
+permissions:
+  filesystem:
+    read:
+      - ./input
+
+  network:
+    denied
+
+  environment:
+    denied
+
+  subprocess:
+    denied
+
+12.3 MVP
+
+WASM execution;
+
+explicit capabilities;
+
+filesystem restrictions;
+
+network restrictions;
+
+environment restrictions;
+
+resource limits;
+
+deterministic mode where appropriate;
+
+execution logs;
+
+CLI;
+
+exit status.
+
+13. TPT Data Transformer
+
+13.1 Product statement
+
+Transform business data between common formats using repeatable
+pipelines.
+
+13.2 Example
+
+pipeline:
+
+  - trim:
+      fields: ["*"]
+
+  - lowercase:
+      fields:
+        - email
+
+  - rename:
+      first_name: firstName
+      last_name: lastName
+
+  - combine:
+      fields:
+        - firstName
+        - lastName
+      into: fullName
+
+13.3 Supported transformations
+
+Initial:
+
+rename;
+
+delete;
+
+select;
+
+trim;
+
+case conversion;
+
+type conversion;
+
+defaults;
+
+conditional values;
+
+combine/split;
+
+map;
+
+filter;
+
+calculated fields.
+
+Later:
+
+joins;
+
+lookups;
+
+reference tables;
+
+streaming;
+
+larger file processing.
+
+14. TPT Approval Engine
+
+14.1 Product statement
+
+Define deterministic approval requirements without embedding approval
+logic in every application.
+
+Example:
+
+approval:
+
+  - when:
+      amount: "<1000"
+    decision: automatic
+
+  - when:
+      amount: "1000-5000"
+    approver:
+      role: manager
+
+  - when:
+      amount: ">5000"
+    approver:
+      role: director
+
+14.2 Important boundary
+
+The engine determines:
+
+Who or what must approve.
+
+It does not become an email or workflow SaaS.
+
+The customer's workflow system consumes the decision.
+
+This keeps the product small and reliable.
+
+15. TPT Compliance Evidence Processor
+
+15.1 Product statement
+
+Process, verify and organise compliance evidence locally.
+
+15.2 Inputs
+
+JSON;
+
+CSV;
+
+text;
+
+exported logs;
+
+policy files;
+
+evidence metadata;
+
+selected document formats.
+
+15.3 Outputs
+
+evidence inventory;
+
+control/evidence mapping;
+
+validation report;
+
+hashes;
+
+machine-readable report;
+
+HTML report.
+
+15.4 Cryptographic integrity
+
+Where appropriate:
+
+evidence
+   |
+hash
+   |
+manifest
+   |
+signed/verified report
+
+Reuse tpt-crypto where appropriate.
+
+15.5 Scope boundary
+
+The product must not claim to certify an organisation's compliance.
+
+It processes evidence and produces structured evidence artifacts.
+
+16. TPT AI Action Guard
+
+16.1 Product statement
+
+Enforce deterministic security and business policies before AI agents
+execute actions.
+
+16.2 Architecture
+
+AI agent
+   |
+action request
+   |
+TPT AI Action Guard
+   |
+policy evaluation
+   |
++---------+-------------+
+|         |             |
+ALLOW   DENY     REQUIRE_APPROVAL
+   |
+MCP/tool
+
+16.3 Example
+
+Input:
+
+{
+  "action": "refund_customer",
+  "amount": 7500
+}
+
+Policy:
+
+- action: refund_customer
+
+  when:
+    amount:
+      gt: 5000
+
+  decision:
+    require_approval: true
+
+Result:
+
+{
+  "decision": "REQUIRE_APPROVAL",
+  "reason": "refund exceeds $5,000 limit"
+}
+
+16.4 Repositories
+
+Primary:
+
+tpt-mcpbox;
+
+tpt-wasm;
+
+tpt-runtime;
+
+tpt-capsec;
+
+tpt-primitives;
+
+tpt-crypto.
+
+This product should be built after the core policy engine is stable.
+
+17. TPT Rules SDK
+
+17.1 Product statement
+
+Embed deterministic business rules into your own application.
+
+17.2 Initial interfaces
+
+Rust;
+
+CLI;
+
+WASM.
+
+Potential later interfaces:
+
+Python;
+
+Node.js;
+
+.NET.
+
+Do not build all language bindings before there is evidence of demand.
+
+17.3 Deliverables
+
+SDK;
+
+examples;
+
+schema definitions;
+
+policy compiler;
+
+runtime;
+
+integration guide;
+
+test utilities.
+
+18. Shared CLI
+
+All products should use a common CLI philosophy.
+
+Examples:
+
+tpt policy ...
+tpt data ...
+tpt document ...
+tpt invoice ...
+tpt transform ...
+tpt approve ...
+tpt secure-run ...
+tpt evidence ...
+tpt ai-guard ...
+
+Alternatively, individual binaries can be shipped if simpler for
+customers.
+
+The implementation should share the same CLI framework internally.
+
+Common flags:
+
+--config
+--policy
+--schema
+--input
+--output
+--format
+--json
+--verbose
+--quiet
+--version
+
+Exit codes should be documented and stable.
+
+19. Shared Configuration
+
+Use predictable configuration locations.
+
+Suggested:
+
+./tpt/
+    config/
+    policies/
+    schemas/
+    templates/
+    reports/
+
+Avoid hidden databases in the initial products.
+
+Configuration should be human-readable wherever possible.
+
+20. Reporting
+
+Every validation-oriented application should support a common report
+model.
+
+Minimum report fields:
+
+{
+  "status": "failed",
+  "timestamp": "...",
+  "product": "tpt-data-validator",
+  "version": "1.0.0",
+  "input": {
+    "name": "customers.csv"
+  },
+  "summary": {
+    "processed": 1247,
+    "valid": 1218,
+    "invalid": 29
+  },
+  "errors": []
+}
+
+Report formats:
+
+JSON;
+
+human-readable terminal;
+
+HTML.
+
+PDF should not be an initial requirement.
+
+21. Auditability
+
+The products should favour explicit, machine-readable explanations.
+
+A decision should be traceable to:
+
+product version;
+
+policy version;
+
+schema version;
+
+input;
+
+rule IDs;
+
+validation errors;
+
+timestamp;
+
+optional hash.
+
+This is a strong differentiator against ad-hoc scripts.
+
+22. Security Architecture
+
+Security should be layered.
+
+Product
+  |
+Policy
+  |
+Runtime
+  |
+Capabilities
+  |
+WASM sandbox
+  |
+OS process boundary
+
+Relevant existing repositories:
+
+tpt-capsec;
+
+tpt-wasm;
+
+tpt-runtime;
+
+tpt-archon;
+
+tpt-nexus;
+
+tpt-crypto.
+
+Do not expose unnecessary complexity to customers.
+
+The commercial application should present a simple concept:
+
+"This process can only do what you explicitly allow it to do."
+
+23. Packaging
+
+Each product should ship as a release bundle.
+
+Example:
+
+tpt-app-policy-1.0.0/
+├── bin/
+│   ├── tpt-policy
+│   └── tpt-policy.exe
+├── examples/
+├── policies/
+├── schemas/
+├── docs/
+├── LICENSE.txt
+├── CHANGELOG.md
+└── README.md
+
+Optional:
+
+docker/
+wasm/
+checksums/
+signatures/
+
+24. Platform Support
+
+Initial target:
+
+Windows x64;
+
+Linux x64.
+
+Possible later:
+
+macOS ARM64;
+
+macOS x64;
+
+Linux ARM64.
+
+Do not promise every platform at launch.
+
+The priority should be:
+
+Windows;
+
+Linux.
+
+This matches the likely business/IT audience while keeping release
+engineering manageable.
+
+25. Docker
+
+Docker images should be provided for products that naturally operate as
+services.
+
+Initial candidates:
+
+TPT App Policy;
+
+TPT Document Validator;
+
+TPT Data Validator;
+
+TPT Invoice Validator;
+
+TPT AI Action Guard.
+
+The CLI/native binary remains the primary distribution mechanism.
+
+26. Licensing Strategy
+
+Use a clear commercial licence.
+
+The licence should distinguish:
+
+personal evaluation;
+
+commercial internal use;
+
+redistribution;
+
+modification;
+
+embedding;
+
+source availability.
+
+Suggested commercial tiers:
+
+Developer
+
+For one developer / internal development.
+
+Business
+
+For internal business use.
+
+Team
+
+For broader internal deployment.
+
+Source
+
+Optional premium SKU if source-code access is commercially justified.
+
+Avoid complex usage metering.
+
+Do not make the customer contact you to renew a local executable unless
+the product specifically needs annual maintenance.
+
+27. Gumroad Product Structure
+
+Each product should have a dedicated Gumroad listing.
+
+Example:
+
+TPT App Policy — Developer Edition
+TPT App Policy — Business Edition
+TPT App Policy — Source Edition
+
+However, avoid creating excessive SKU fragmentation initially.
+
+Start with:
+
+Standard;
+
+Commercial.
+
+Optional premium source-code edition later.
+
+28. Indicative Pricing
+
+Pricing should be tested rather than treated as permanent.
+
+Initial targets:
+
+Product                           Standard   Commercial
+
+App Policy                           $149        $399
+Document Validator                    $99        $249
+Data Validator                        $99        $299
+Invoice Validator                    $149        $399
+Secure Script Runner                  $99        $299
+Data Transformer                      $79        $249
+Approval Engine                      $149        $399
+Compliance Evidence Processor        $199        $499
+AI Action Guard                      $149        $499
+Rules SDK                             $99        $299
+
+The goal is not to be the cheapest tool.
+
+The positioning is:
+
+Pay once. Run locally. No SaaS subscription. No vendor lock-in.
+
+29. Customer Support Strategy
+
+The product architecture must actively minimise support.
+
+29.1 No mandatory integrations
+
+Never make the core product depend on a customer's ERP.
+
+29.2 No mandatory account
+
+The customer should be able to download and run the software
+immediately.
+
+29.3 No cloud dependency
+
+Core functionality must work offline.
+
+29.4 Strong diagnostics
+
+Errors should explain:
+
+what failed;
+
+where it failed;
+
+why it failed;
+
+how to fix it.
+
+29.5 Self-test
+
+Every application should provide:
+
+tpt doctor
+
+which checks:
+
+runtime;
+
+configuration;
+
+permissions;
+
+installation;
+
+version;
+
+optional dependencies.
+
+29.6 Example-driven documentation
+
+Every major capability should have a copy/paste example.
+
+30. Documentation Strategy
+
+Each commercial product should contain:
+
+README
+INSTALL
+QUICKSTART
+CONCEPTS
+CONFIGURATION
+CLI_REFERENCE
+POLICY_REFERENCE
+SCHEMA_REFERENCE
+INTEGRATION
+TROUBLESHOOTING
+SECURITY
+LICENCE
+CHANGELOG
+
+The first five minutes matter most.
+
+A new customer should be able to:
+
+install;
+
+run an example;
+
+modify a rule;
+
+run it against their data;
+
+understand the output.
+
+31. Product Website / Landing Pages
+
+Each product needs a very simple landing page.
+
+Recommended structure:
+
+Headline
+One-sentence value proposition
+
+Problem
+How it works
+Example
+Screenshots/output
+Features
+Supported platforms
+Pricing
+Download / Buy
+Documentation
+FAQ
+
+Avoid marketing the underlying architecture excessively.
+
+Customers buy outcomes, not tpt-runtime.
+
+32. GitHub Strategy
+
+The GitHub organisation should remain the technical discovery surface.
+
+Recommended public structure:
+
+Open-source repositories
+        |
+        +-- documentation
+        |
+        +-- examples
+        |
+        +-- free CLI/runtime components
+        |
+        +-- commercial product links
+
+The commercial products should have dedicated repositories where
+appropriate.
+
+For example:
+
+tpt-app-policy
+tpt-data-validator
+tpt-document-validator
+tpt-invoice-validator
+tpt-secure-runner
+tpt-data-transformer
+tpt-approval-engine
+tpt-evidence
+tpt-ai-guard
+tpt-rules-sdk
+
+Not every repository needs to be fully commercial/private.
+
+The purpose of the commercial repositories is to create a clear product
+boundary.
+
+33. Recommended Repository Dependency Strategy
+
+The commercial repositories should consume stable TPT foundation crates.
+
+Conceptually:
+
+tpt-primitives
+       |
+tpt-capsec
+       |
+tpt-wasm
+       |
+tpt-runtime
+       |
+tpt-policy-core
+       |
++------+------+------+------+
+|      |      |      |      |
+data  doc  invoice approve  ai
+
+Commercial product code should not directly depend on dozens of
+unrelated experimental repositories.
+
+Create a narrow stable dependency layer.
+
+34. New Shared Repositories
+
+The following repositories should be considered new additions.
+
+tpt-policy-core
+
+Contains:
+
+rule AST;
+
+parser;
+
+evaluator;
+
+policy versioning;
+
+decision model;
+
+explanation model;
+
+policy tests.
+
+tpt-schema
+
+Contains:
+
+schema abstraction;
+
+validation model;
+
+schema diagnostics.
+
+tpt-data-core
+
+Contains:
+
+record abstraction;
+
+CSV/JSON handling;
+
+streaming;
+
+transformation primitives.
+
+tpt-report
+
+Contains:
+
+common report model;
+
+JSON reporter;
+
+terminal reporter;
+
+HTML reporter.
+
+tpt-commercial-cli
+
+Contains:
+
+shared CLI conventions;
+
+argument parsing;
+
+configuration;
+
+diagnostics;
+
+exit codes.
+
+These repositories should be small and deliberately boring.
+
+35. Policy DSL Design
+
+The DSL should prioritise readability.
+
+Example:
+
+policy: purchasing
+version: 1
+
+rules:
+
+  - id: purchase-under-limit
+    description: Purchases below $1,000 are automatically approved
+
+    when:
+      amount:
+        lt: 1000
+
+    then:
+      decision: approved
+
+  - id: purchase-manager
+    when:
+      amount:
+        gte: 1000
+        lt: 5000
+
+    then:
+      decision: approval_required
+      approver: manager
+
+Avoid creating a programming language.
+
+The DSL should remain declarative.
+
+36. Policy Testing
+
+Policies must be testable without production systems.
+
+Example:
+
+tests:
+
+  - name: small purchase
+    input:
+      amount: 500
+    expect:
+      decision: approved
+
+  - name: large purchase
+    input:
+      amount: 6000
+    expect:
+      decision: approval_required
+
+CLI:
+
+tpt-policy test policy.yaml
+
+Output:
+
+PASS small purchase
+PASS large purchase
+
+2 tests passed
+
+This is a high-value developer feature and a major differentiator.
+
+37. Versioning
+
+Use semantic versioning for software.
+
+Policies should have independent versions.
+
+Example:
+
+Application:
+1.4.0
+
+Policy:
+purchasing@2.1.0
+
+Schema:
+invoice@3.0.0
+
+Reports should record all three.
+
+This allows reproducible decisions.
+
+38. Observability
+
+The products should provide useful local logs without requiring a
+logging service.
+
+Support:
+
+--verbose
+--debug
+--json-logs
+
+Logs should not accidentally expose sensitive input data.
+
+Default logging should avoid dumping customer records.
+
+39. Data Privacy
+
+A major selling point should be:
+
+Your data stays on your infrastructure.
+
+This is especially useful for:
+
+invoices;
+
+customer data;
+
+financial records;
+
+compliance evidence;
+
+internal business rules.
+
+No customer data should be sent to TPT infrastructure by default.
+
+40. Update Mechanism
+
+Avoid building a complicated auto-updater initially.
+
+Provide:
+
+versioned downloads;
+
+checksums;
+
+release notes;
+
+optional signatures.
+
+A customer can manually install a new version.
+
+This dramatically reduces operational complexity.
+
+41. MVP Sequencing
+
+Phase 1 --- Policy Foundation
+
+Build:
+
+tpt-policy-core;
+
+policy DSL;
+
+evaluator;
+
+decision model;
+
+policy tests;
+
+CLI;
+
+JSON input/output.
+
+Deliverable:
+
+TPT App Policy 0.1
+
+Phase 2 --- Production Runtime
+
+Integrate:
+
+tpt-runtime;
+
+tpt-wasm;
+
+tpt-capsec;
+
+tpt-primitives.
+
+Add:
+
+resource limits;
+
+capability model;
+
+deterministic mode;
+
+packaging.
+
+Deliverable:
+
+TPT App Policy 1.0
+
+Phase 3 --- Data Platform
+
+Build:
+
+schema core;
+
+CSV handling;
+
+JSON handling;
+
+common reports;
+
+validation engine.
+
+Deliverable:
+
+TPT Data Validator
+
+Phase 4 --- Document Platform
+
+Add:
+
+document schemas;
+
+structured document validation;
+
+reporting;
+
+templates.
+
+Deliverable:
+
+TPT Document Validator
+
+Phase 5 --- Vertical Product
+
+Build invoice-specific rules and templates.
+
+Deliverable:
+
+TPT Invoice Validator
+
+Phase 6 --- Transformation
+
+Build transformation pipeline engine.
+
+Deliverable:
+
+TPT Data Transformer
+
+Phase 7 --- Approval
+
+Package policy decisions as approval-specific workflows.
+
+Deliverable:
+
+TPT Approval Engine
+
+Phase 8 --- Security Product
+
+Package WASM + capability security.
+
+Deliverable:
+
+TPT Secure Script Runner
+
+Phase 9 --- Compliance
+
+Add evidence manifests, hashing and reporting.
+
+Deliverable:
+
+TPT Compliance Evidence Processor
+
+Phase 10 --- AI
+
+Integrate:
+
+tpt-mcpbox;
+
+policy core;
+
+capability security.
+
+Deliverable:
+
+TPT AI Action Guard
+
+42. What Not to Build
+
+To protect the solo-developer business model, explicitly avoid:
+
+SaaS control planes;
+
+hosted customer databases;
+
+mandatory accounts;
+
+customer-specific ERP connectors;
+
+bespoke integrations;
+
+mobile apps;
+
+complex web dashboards;
+
+billing infrastructure;
+
+multi-tenant architecture;
+
+24/7 monitoring;
+
+managed deployments;
+
+customer-specific forks;
+
+custom compliance consulting;
+
+custom policy authoring services.
+
+The product should be software, not a disguised consulting business.
+
+43. Support Boundary
+
+The commercial licence/documentation should make clear that:
+
+TPT provides:
+
+software;
+
+documentation;
+
+examples;
+
+release updates;
+
+bug fixes according to the product's support policy.
+
+The customer is responsible for:
+
+their ERP;
+
+their integration layer;
+
+their infrastructure;
+
+their business rules;
+
+their data;
+
+their deployment;
+
+their regulatory interpretation.
+
+This boundary is essential.
+
+44. Competitive Positioning
+
+Do not position the products as:
+
+"A cheaper enterprise SaaS."
+
+Position them as:
+
+Professional local automation tools for businesses that want control
+over their data and infrastructure.
+
+Key differentiators:
+
+one-time purchase;
+
+local execution;
+
+no subscription;
+
+no cloud dependency;
+
+deterministic rules;
+
+machine-readable output;
+
+automation-friendly;
+
+Rust/WASM implementation;
+
+capability-based security;
+
+auditable decisions.
+
+45. The Product Flywheel
+
+The portfolio should create a flywheel:
+
+Open-source TPT infrastructure
+          |
+          v
+Developers discover TPT
+          |
+          v
+Commercial utility
+          |
+          v
+Business customer
+          |
+          v
+More use cases
+          |
+          v
+More policies/templates
+          |
+          v
+More commercial products
+          |
+          v
+More adoption of TPT infrastructure
+
+46. Reusable Asset Strategy
+
+The most valuable assets are not individual products.
+
+They are the shared components:
+
+policy evaluator;
+
+schema engine;
+
+report engine;
+
+CLI;
+
+runtime;
+
+WASM sandbox;
+
+capability security;
+
+cryptographic verification;
+
+policy templates;
+
+documentation system.
+
+Every new product should reuse as many of these as possible.
+
+47. First Commercial Product: Detailed Acceptance Criteria
+
+TPT App Policy 1.0 should not ship until all of the following work.
+
+Installation
+
+Windows installation works.
+
+Linux installation works.
+
+Binary runs without cloud account.
+
+--version works.
+
+tpt doctor works.
+
+Policy
+
+YAML loads.
+
+Invalid policies generate useful errors.
+
+Policy version is recorded.
+
+Rules can be named.
+
+Rules can be described.
+
+Evaluation
+
+nested fields;
+
+strings;
+
+numbers;
+
+booleans;
+
+arrays;
+
+equality;
+
+inequality;
+
+greater/less than;
+
+AND;
+
+OR;
+
+existence checks;
+
+decision outputs.
+
+Diagnostics
+
+matched rules;
+
+failed rules;
+
+explanations;
+
+stable exit codes.
+
+Interfaces
+
+CLI;
+
+stdin/stdout;
+
+JSON;
+
+REST service;
+
+Docker.
+
+Testing
+
+policy test files;
+
+golden tests;
+
+deterministic output tests.
+
+Documentation
+
+quickstart;
+
+policy reference;
+
+CLI reference;
+
+integration example;
+
+troubleshooting.
+
+48. First Customer Demo
+
+The first demo should be extremely simple.
+
+Customer has:
+
+{
+  "employee": {
+    "department": "sales"
+  },
+  "expense": {
+    "amount": 6200
+  }
+}
+
+Policy:
+
+policy: expense
+
+rules:
+
+  - id: manager-approval
+    when:
+      expense.amount:
+        gt: 1000
+    then:
+      decision: approval_required
+      approver: manager
+
+  - id: finance-approval
+    when:
+      expense.amount:
+        gt: 5000
+    then:
+      decision: approval_required
+      approver: finance
+
+Run:
+
+tpt-policy check expense.yaml expense.json
+
+Return:
+
+{
+  "decision": "approval_required",
+  "approvers": [
+    "manager",
+    "finance"
+  ],
+  "matched_rules": [
+    "manager-approval",
+    "finance-approval"
+  ]
+}
+
+That demo communicates the product in under two minutes.
+
+49. Commercial Product Naming
+
+Use consistent naming.
+
+Recommended:
+
+TPT App Policy
+TPT Data Validator
+TPT Document Validator
+TPT Invoice Validator
+TPT Secure Script Runner
+TPT Data Transformer
+TPT Approval Engine
+TPT Compliance Evidence Processor
+TPT AI Action Guard
+TPT Rules SDK
+
+Avoid overly clever names.
+
+The names should explain what the product does.
+
+50. Recommended Immediate Work
+
+The next implementation should focus only on:
+
+Repository
+
+tpt-app-policy
+
+New shared components
+
+tpt-policy-core
+tpt-schema
+tpt-report
+tpt-commercial-cli
+
+Existing infrastructure
+
+tpt-primitives
+tpt-capsec
+tpt-wasm
+tpt-runtime
+tpt-crypto
+
+First deliverable
+
+A local executable capable of:
+
+tpt-policy check policy.yaml input.json
+
+with:
+
+deterministic rules;
+
+JSON output;
+
+useful diagnostics;
+
+policy tests;
+
+documentation.
+
+Do not build the web UI first.
+
+Do not build ERP integrations first.
+
+Do not build SaaS infrastructure.
+
+Do not build ten products simultaneously.
+
+Build the policy engine and first excellent commercial wrapper.
+
+51. Definition of Success
+
+The first product is successful when a developer can discover it on
+GitHub, purchase it, download it, and go from zero to a working business
+rule in less than 15 minutes without contacting the developer.
+
+The broader portfolio is successful when a single shared engine powers
+multiple products with only thin product-specific layers.
+
+The ideal architecture is therefore:
+
+              TPT OPEN SOURCE ECOSYSTEM
+                         |
+       +-----------------+-----------------+
+       |                 |                 |
+   WASM/Security      Runtime          Primitives
+       |                 |                 |
+       +-----------------+-----------------+
+                         |
+                  POLICY PLATFORM
+                         |
+       +---------+-------+-------+---------+
+       |         |       |       |         |
+      Data      Docs   Invoice Approval   AI
+   Validator Validator Validator Engine  Guard
+       |         |       |       |         |
+       +---------+-------+-------+---------+
+                         |
+                   COMMERCIAL CLI
+                         |
+                  Native / Docker
+                         |
+                     CUSTOMER
+
+The strategic objective is not to create ten applications.
+
+It is to create one reusable commercial engine that can be sold ten
+different ways.
+
+52. Final Recommendation
+
+The highest-priority commercial asset should be:
+
+TPT App Policy --- a self-hosted, deterministic business-rule engine
+with CLI, JSON, REST and WASM interfaces.
+
+It should use the existing TPT infrastructure rather than duplicate it.
+
+The second product should be:
+
+TPT Data Validator
+
+because it converts the policy/schema machinery into an immediately
+understandable business utility.
+
+The third should be:
+
+TPT Document Validator
+
+because it generalises the same infrastructure.
+
+The fourth should be:
+
+TPT Invoice Validator
+
+because it creates a clear vertical proposition with obvious business
+value.
+
+Only after these foundations are working should the portfolio expand
+into secure execution, compliance and AI-agent control.
+
+The core commercial thesis is:
+
+TPT provides the infrastructure. The commercial applications turn
+that infrastructure into finished, useful tools that businesses can
+buy once and run themselves.
+
+This approach maximises reuse of the existing GitHub investment while
+minimising recurring infrastructure, customer-specific development, and
+support obligations.
