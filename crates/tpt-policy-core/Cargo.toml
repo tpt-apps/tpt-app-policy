@@ -1,0 +1,16 @@
+[package]
+name = "tpt-policy-core"
+description = "Deterministic policy evaluation engine for TPT App Policy"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true

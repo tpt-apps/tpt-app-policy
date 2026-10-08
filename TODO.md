@@ -16,80 +16,87 @@ Source: `spec.txt` (section refs in parentheses). Tick boxes as you go: `- [x]`.
 ## Open decisions (default shown; change if wrong)
 
 - [ ] Rust toolchain / MSRV — default: latest stable, pin in `rust-toolchain.toml`
-- [ ] Combinator syntax for AND/OR/NOT — default: `all:` / `any:` / `not:` blocks; sibling fields are implicit AND
-- [ ] Operator set — default: `equals, not_equals, gt, gte, lt, lte, in, not_in, contains, exists, matches`
-- [ ] Dotted paths (`expense.amount`) and nested YAML both supported — default: yes
-- [ ] Missing field behaviour — default: condition is false (not an error) unless `exists` used
-- [ ] Decision when no rule matches — default: policy-level `default_decision`, required field
-- [ ] Final exit-code table (e.g. 0 approved, 10 approval_required, 20 review, 30 rejected, 2 policy error, 3 input error)
+- [x] Combinator syntax for AND/OR/NOT — implemented: `all:` / `any:` / `not:`; sibling fields are AND-ed
+- [x] Operator set — implemented: `equals, not_equals, gt, gte, lt, lte, in, not_in, contains, exists`. `matches` (regex) deferred: no regex dependency yet
+- [x] Dotted paths and nested YAML — implemented; numeric segments index lists
+- [x] Missing field behaviour — implemented: any check on a missing or null field fails, except `exists: false`
+- [x] Decision when no rule matches — implemented: optional `default_decision`, defaults to `review` (fails safe; the spec gives no default)
+- [x] Exit-code table — implemented: 0 approved/success, 10 approval_required, 20 review, 30 rejected, 1 file read, 2 invalid policy or usage, 3 invalid input JSON, 4 test failed. Documented in README.md
 - [ ] REST server crate — default: axum, optional `--token` bearer auth
 - [ ] Which crates to reuse from TPT-Solutions vs. write fresh (decide after audit in Phase 2)
 - [ ] Product pricing/tiers: Standard + Commercial only (§27–28)
 
 ## Phase 0 — Workspace & shared groundwork
 
-- [ ] Init git repo, `.gitignore`, `rust-toolchain.toml`
-- [ ] Create Cargo workspace root
-- [ ] Create crates: `tpt-policy-core`, `tpt-schema`, `tpt-report`, `tpt-commercial-cli`, `tpt-app-policy`
-- [ ] CI (build + test + clippy + fmt) for Windows and Linux
-- [ ] Clone/audit TPT-Solutions repos: tpt-primitives, tpt-capsec, tpt-wasm, tpt-runtime, tpt-crypto, tpt-mcpbox
-- [ ] Define the narrow stable dependency layer (§33); record API gaps
-- [ ] Pick workspace dependencies (serde, serde_yaml, serde_json, clap, thiserror, ...)
-- [ ] Write `docs/ARCHITECTURE.md` (JSON boundary, layering, what NOT to build §42)
+- [x] Init git repo, `.gitignore`, `rust-toolchain.toml` (repo initialised, nothing committed)
+- [x] Create Cargo workspace root
+- [x] Create crates: `tpt-policy-core`, `tpt-schema`, `tpt-report`, `tpt-commercial-cli`, `tpt-app-policy`
+- [x] CI (build + test + clippy + fmt) for Windows and Linux (workflow written in `.github/workflows/ci.yml`; not yet run on GitHub)
+- [x] Clone/audit TPT-Solutions repos: tpt-primitives, tpt-capsec, tpt-wasm, tpt-runtime, tpt-crypto, tpt-mcpbox (findings in `docs/ARCHITECTURE.md`)
+- [ ] Define the narrow stable dependency layer (§33); record API gaps (draft in ARCHITECTURE.md; needs your decision on tpt-runtime-policy overlap)
+- [x] Pick workspace dependencies (serde, serde_yaml, serde_json, clap, thiserror, ...) (declared in `Cargo.toml`, used from Phase 1)
+- [x] Write `docs/ARCHITECTURE.md` (JSON boundary, layering, what NOT to build §42)
 
 ## Phase 1 — Policy Foundation → TPT App Policy 0.1
 
-### tpt-policy-core (§7, §34, §35)
-- [ ] Rule AST
-- [ ] YAML parser → AST with line/column in errors
-- [ ] Policy metadata: `policy`, `version`, rule `id`, `description`
-- [ ] Field-path resolution (nested objects, arrays)
-- [ ] Operators: equality, inequality, gt/gte/lt/lte, string compare, list membership, existence
-- [ ] Types: strings, numbers, booleans, arrays, nested objects
-- [ ] AND / OR (and NOT) conditions
-- [ ] Decision model + severity precedence merge
-- [ ] Merged outputs: approvers, requirements, warnings
-- [ ] Explanation model: matched rules, failed rules/checks, why
-- [ ] Policy versioning (independent of app version, `name@x.y.z`) (§37)
-- [ ] Determinism guarantees (stable ordering, no clock/random in evaluation) (§7.4)
-- [ ] Policy validation with actionable errors: what/where/why/how to fix (§29.4)
-- [ ] Inline policy `tests:` block (name / input / expect) (§36)
-- [ ] Unit tests + golden tests + deterministic-output tests
+Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left open below are marked with what is missing.
+
+### tpt-policy-core (§7, §34, §35) — done
+- [x] Rule AST (`src/model.rs`)
+- [x] YAML parser with validation (`src/parse.rs`). Syntax errors give line and column. Semantic errors give the key path (e.g. `rules[0].when.amount.greater_than`), not a line number. Line numbers for semantic errors are a possible follow-up.
+- [x] Policy metadata: `policy`, `version` (optional, recorded as `unversioned` when missing), rule `id`, `description`
+- [x] Field-path resolution (nested objects, list indexes)
+- [x] Operators: equality, inequality, gt/gte/lt/lte, string compare, list membership, existence, contains
+- [x] Types: strings, numbers (int and float compare by value), booleans, arrays, nested objects
+- [x] AND / OR / NOT conditions
+- [x] Decision model + severity precedence merge
+- [x] Merged outputs: approvers, requirements, warnings (`requirement` and `warning` on a rule; `approver` as text or `{role: ...}`)
+- [x] Explanation model: matched rules with descriptions, failed rules with the first failed check
+- [~] Policy versioning: version is recorded in every output. **Not done:** `name@x.y.z` form, and checking it against the app version (§37)
+- [x] Determinism: no clock or randomness in evaluation; repeated runs are tested to be byte-identical
+- [x] Validation errors with what / where / why / fix (§29.4)
+- [x] Inline `tests:` block (name / input / expect), with optional `matched_rules` (§36)
+- [x] Tests: 24 behaviour tests in `crates/tpt-policy-core/tests/evaluation.rs`
 
 ### tpt-schema (minimal at this stage) (§34)
-- [ ] Schema abstraction + validation model + diagnostics (stub enough for policy input checks)
+- [ ] Schema abstraction + validation model + diagnostics. **Not started.** The crate exists and is empty; Phase 3 builds it out.
 
 ### tpt-report (§20)
-- [ ] Common report model (status, timestamp, product, version, input, summary, errors)
+- [ ] Common report model (status, timestamp, product, version, input, summary, errors). **Not started.** The JSON output is built directly in the binary for now and should move here.
 - [ ] JSON reporter
-- [ ] Terminal reporter
+- [ ] Terminal reporter. **Partly done:** `explain` text output lives in the binary.
 - [ ] HTML reporter (can wait until Phase 3)
 
 ### tpt-commercial-cli (§18, §19, §38)
-- [ ] Common flags: `--config --policy --schema --input --output --format --json --verbose --quiet --version`
-- [ ] `--debug`, `--json-logs`; logs never dump customer records by default
-- [ ] Config discovery (`./tpt/config|policies|schemas|templates|reports`), no hidden DB
-- [ ] Diagnostics formatter
-- [ ] Stable, documented exit codes
+- [ ] Common flags. **Partly done:** `--format` on `check` and `explain`, and `--version`. **Missing:** `--config --policy --schema --output --json --verbose --quiet`
+- [ ] `--debug`, `--json-logs`; logs never dump customer records by default. **Not started.** Current output contains no logs.
+- [ ] Config discovery (`./tpt/config|policies|schemas|templates|reports`), no hidden DB. **Not started.**
+- [ ] Diagnostics formatter. **Partly done:** `PolicyError` renders what / where / why / fix; not yet shared across products
+- [x] Stable, documented exit codes (`crates/tpt-commercial-cli/src/lib.rs`, table in README.md)
 
 ### tpt-app-policy binary `tpt-policy` (§8, §47–48)
-- [ ] `validate policy.yaml`
-- [ ] `check policy.yaml input.json`
-- [ ] `explain policy.yaml input.json`
-- [ ] `test policy.yaml` (PASS/FAIL output + summary)
-- [ ] `run policy.yaml` via stdin/stdout
-- [ ] `--version`
-- [ ] Audit fields in output: product version, policy version, schema version, rule IDs, timestamp, optional input hash (§21)
-- [ ] §48 expense demo passes exactly as written
-- [ ] README + QUICKSTART draft
-- [ ] Tag **App Policy 0.1**
+- [x] `validate policy.yaml`
+- [x] `check policy.yaml input.json`
+- [x] `explain policy.yaml input.json`
+- [x] `test policy.yaml` (PASS/FAIL output and summary)
+- [x] `run policy.yaml` via stdin/stdout
+- [x] `--version`
+- [ ] Audit fields in output (§21). **Partly done:** engine version, policy name and version. **Missing:** product version, schema version (no schema yet), rule IDs are present but no timestamp (left out on purpose so output stays deterministic), and an optional input hash.
+- [x] §48 expense demo: the output has the spec's `decision`, `approvers` and `matched_rules`. It also has extra fields (explanations, failed rules, warnings, versions).
+- [x] README draft with quickstart (`README.md`). Separate QUICKSTART file not yet split out.
+- [ ] Tag **App Policy 0.1**. Waiting on your go-ahead to commit and tag. Nothing is committed yet.
+
+### Spec gaps found while building Phase 1
+- §35's example has no rule for amounts of $5,000 and above, so those fall through to the default. `examples/purchasing/` adds a `purchase-director` rule and says so in a comment.
+- §7.2 and §48 omit the policy version. It is optional here and defaults to `unversioned`.
+- §14 writes `approver: {role: manager}`. Both that and plain `approver: manager` are accepted.
 
 ## Phase 2 — Production Runtime → TPT App Policy 1.0
 
 - [ ] Integrate tpt-primitives (types/IDs/deterministic representations)
 - [ ] Integrate tpt-capsec (capability model)
 - [ ] Integrate tpt-runtime (lifecycle, resource limits)
-- [ ] Integrate tpt-wasm (WASM sandbox)
+- [ ] Integrate tpt-wasm (WASM sandbox). Before embedding: run `cargo deny` on its dependency tree to check third-party licences (the tpt-wasm licence itself is MIT OR Apache-2.0).
 - [ ] Resource limits (time, memory, input size)
 - [ ] Deterministic mode
 - [ ] Expose policy evaluation as an embeddable WASM module (§8.4)
@@ -147,7 +154,7 @@ Source: `spec.txt` (section refs in parentheses). Tick boxes as you go: `- [x]`.
 
 ## Phase 3 — Data Platform → TPT Data Validator
 
-- [ ] `tpt-schema` full: schema definition (YAML), types, required, enums, patterns, uniqueness
+- [ ] `tpt-schema` full: schema definition (YAML), types, required, enums, patterns, uniqueness. Note: §34 lists `tpt-schema` as a new shared repo. It does not exist on GitHub yet; it is currently an empty crate in this workspace.
 - [ ] `tpt-data-core`: record abstraction, CSV, JSON, JSON Lines, streaming
 - [ ] Validation engine using policy core + schema
 - [ ] Outputs: validated data, invalid records, error report, summary report

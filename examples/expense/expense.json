@@ -1,0 +1,8 @@
+{
+  "employee": {
+    "department": "sales"
+  },
+  "expense": {
+    "amount": 6200
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "decision": "approval_required",
+  "approvers": [
+    "manager",
+    "finance"
+  ],
+  "requirements": [],
+  "matched_rules": [
+    "manager-approval",
+    "finance-approval"
+  ],
+  "failed_rules": [],
+  "explanations": [
+    {
+      "rule": "manager-approval",
+      "decision": "approval_required",
+      "message": "Expenses over $1,000 need manager approval"
+    },
+    {
+      "rule": "finance-approval",
+      "decision": "approval_required",
+      "message": "Expenses over $5,000 also need finance approval"
+    }
+  ],
+  "warnings": [],
+  "policy": {
+    "name": "expense",
+    "version": "1.0.0"
+  },
+  "engine_version": "0.1.0"
+}

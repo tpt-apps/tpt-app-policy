@@ -1,0 +1,13 @@
+[package]
+name = "tpt-report"
+description = "Common report model with JSON, terminal and HTML reporters"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]

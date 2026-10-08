@@ -1,0 +1,22 @@
+[package]
+name = "tpt-app-policy"
+description = "TPT App Policy: self-hosted deterministic business-rule engine"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "tpt-policy"
+path = "src/main.rs"
+
+[dependencies]
+tpt-policy-core.workspace = true
+tpt-commercial-cli.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+tiny_http.workspace = true

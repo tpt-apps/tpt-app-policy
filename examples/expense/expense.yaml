@@ -1,0 +1,21 @@
+policy: expense
+version: "1.0.0"
+
+rules:
+  - id: manager-approval
+    description: Expenses over $1,000 need manager approval
+    when:
+      expense.amount:
+        gt: 1000
+    then:
+      decision: approval_required
+      approver: manager
+
+  - id: finance-approval
+    description: Expenses over $5,000 also need finance approval
+    when:
+      expense.amount:
+        gt: 5000
+    then:
+      decision: approval_required
+      approver: finance

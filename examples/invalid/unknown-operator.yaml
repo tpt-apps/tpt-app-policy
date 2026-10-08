@@ -1,0 +1,9 @@
+policy: expense
+
+rules:
+  - id: big-expense
+    when:
+      expense.amount:
+        greater_than: 1000
+    then:
+      decision: approval_required

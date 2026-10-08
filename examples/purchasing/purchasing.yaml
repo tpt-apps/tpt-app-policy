@@ -1,0 +1,55 @@
+policy: purchasing
+version: 1
+
+rules:
+  - id: purchase-under-limit
+    description: Purchases below $1,000 are automatically approved
+    when:
+      amount:
+        lt: 1000
+    then:
+      decision: approved
+
+  - id: purchase-manager
+    description: Purchases from $1,000 to under $5,000 need a manager
+    when:
+      amount:
+        gte: 1000
+        lt: 5000
+    then:
+      decision: approval_required
+      approver: manager
+
+  # Added beyond the spec's §35 example, which has no rule for amounts of
+  # $5,000 and above. Without this rule, large purchases fall through to the
+  # default decision.
+  - id: purchase-director
+    description: Purchases of $5,000 or more need a director
+    when:
+      amount:
+        gte: 5000
+    then:
+      decision: approval_required
+      approver: director
+
+tests:
+  - name: small purchase
+    input:
+      amount: 500
+    expect:
+      decision: approved
+      matched_rules: [purchase-under-limit]
+
+  - name: mid-sized purchase
+    input:
+      amount: 2000
+    expect:
+      decision: approval_required
+      matched_rules: [purchase-manager]
+
+  - name: large purchase
+    input:
+      amount: 6000
+    expect:
+      decision: approval_required
+      matched_rules: [purchase-director]
