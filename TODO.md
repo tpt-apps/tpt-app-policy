@@ -226,7 +226,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] JSON + HTML reports
 - [x] Explicit "does not certify compliance" disclaimer (§15.5), on every report
 - [x] CLI `tpt-evidence` with `process`, `verify` and `doctor`
-- [~] Docs, examples, bundle. **Done:** `docs/COMPLIANCE_EVIDENCE.md`, `examples/evidence/`, `scripts/package.sh evidence` (Windows). **Missing:** landing page, Gumroad listing, Linux bundle.
+- [~] Docs, examples, bundle. **Done:** `docs/COMPLIANCE_EVIDENCE.md`, `examples/evidence/`, `scripts/package.sh evidence` (Windows). **Missing:** landing page, Gumroad listing. Linux bundle built in a container.
 - [ ] Tag **Compliance Evidence Processor 1.0**
 
 ## Phase 10 — AI → TPT AI Action Guard
