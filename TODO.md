@@ -71,8 +71,8 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ### tpt-commercial-cli (§18, §19, §38)
 - [~] Common flags. **Done:** `--format` on `check` and `explain`, `--version`, `--output FILE` on `check`/`explain`/`run`, `--quiet` on `validate`/`test`. **Missing:** `--config --policy --schema --json --verbose` (`--config` and `--schema` wait on their designs; `--json` and `--verbose` are not needed by any current command).
-- [ ] `--debug`, `--json-logs`; logs never dump customer records by default. **Not started.** Current output contains no logs.
-- [ ] Config discovery (`./tpt/config|policies|schemas|templates|reports`), no hidden DB. **Not started.**
+- [x] `--debug`, `--json-logs`; logs never dump customer records by default. **Done** in `tpt-policy` via `tpt-commercial-cli::log`: logs carry sizes, hashes, rule IDs and timings, never input values. Tested in `crates/tpt-app-policy/tests/logging.rs`. Other products still need to adopt the flags.
+- [~] Config discovery (`./tpt/config|policies|schemas|templates|reports`), no hidden DB. **Done for policies:** a bare policy name resolves to `./tpt/policies/`, and `doctor` checks the layout (`tpt-commercial-cli::config`). **Not done:** `--config`, reports and templates lookup. `--config` waits on its design.
 - [~] Diagnostics formatter. **Partly done:** `PolicyError` renders what / where / why / fix; not yet shared across products. **Not doing:** a shared formatter would make `tpt-policy-core` depend on this CLI crate, which reverses the layering, for a format string of about six lines in each product.
 - [x] Stable, documented exit codes (`crates/tpt-commercial-cli/src/lib.rs`, table in README.md)
 

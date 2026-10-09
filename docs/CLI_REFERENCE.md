@@ -9,6 +9,11 @@ from the tool itself.
 |---|---|
 | `-h`, `--help` | Show help. |
 | `-V`, `--version` | Print the product version. |
+| `--verbose` | Print each step to stderr: policy loaded, input read, decision. |
+| `--debug` | Also print internal detail to stderr: input fingerprint, matched rule IDs, engine version. Never input values. |
+| `--json-logs` | Write log lines to stderr as JSON, one object per line. Works with `--verbose` or `--debug`. |
+
+Logs go to stderr, so stdout stays the decision output. Logs are off unless one of the first two flags is set.
 
 ## Commands
 
@@ -66,6 +71,10 @@ Serves evaluations over HTTP. See the HTTP section below.
   which keeps the value out of shell history.
 
 ### `doctor`
+
+## Config folders
+
+A bare policy name, such as `expense`, is looked up in `./tpt/policies/` when no file of that name exists in the current folder. It tries `expense`, then `expense.yaml`, then `expense.yml`. Any path with a folder part is used as given. `--debug` says when a name was found this way. No other folder is read yet, and there is no hidden database.
 
 Checks that this install works: version, platform, working-directory write
 access, the optional `./tpt` config folder, and a built-in self-test. Exits `0`
