@@ -10,7 +10,7 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 
 ### Added
 
-- `--verbose`, `--debug` and `--json-logs` on `tpt-policy`, from the shared `tpt-commercial-cli::log` module. Logs go to stderr and never include input values. Documented in `docs/CLI_REFERENCE.md`.
+- `--verbose`, `--debug` and `--json-logs` on every product binary, from the shared `tpt-commercial-cli::log` module. Logs go to stderr and never include input values. Each run logs its start and its exit code. `tpt-policy` also logs the policy, input and decision. Documented in `docs/CLI_REFERENCE.md`.
 - Config discovery: a bare policy name resolves against `./tpt/policies/`. The layout check in `doctor` uses the same shared code.
 - Policy `format:` (a whole number, default 1). A policy declaring a format newer than the engine's is refused with a message to upgrade. Documented in `docs/POLICY_REFERENCE.md`.
 - `examples/erp-generic/`: a generic purchase-order CSV with a schema and policy, using invented column names. Not any vendor's format.
