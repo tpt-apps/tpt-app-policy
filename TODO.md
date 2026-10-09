@@ -235,7 +235,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [ ] tpt-mcpbox integration for MCP/tool gating. **Blocked:** tpt-mcpbox is not in this repository.
 - [ ] Capability security via tpt-capsec. **Blocked:** tpt-capsec is not in this repository.
 - [~] CLI `tpt-ai-guard` with `check`, `validate` and `doctor`. **Not done:** REST, Docker image.
-- [~] Docs, examples, bundle. **Done:** `docs/AI_ACTION_GUARD.md`, `examples/ai-guard/`, `scripts/package.sh ai-guard` (Windows). **Missing:** landing page, Gumroad listing, Linux bundle.
+- [~] Docs, examples, bundle. **Done:** `docs/AI_ACTION_GUARD.md`, `examples/ai-guard/`, `scripts/package.sh ai-guard` (Windows). **Missing:** landing page, Gumroad listing. Linux bundle built in a container.
 - [ ] Tag **AI Action Guard 1.0**
 
 ## Portfolio extra — TPT Rules SDK (§17)
