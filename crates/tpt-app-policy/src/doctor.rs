@@ -8,7 +8,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
-use tpt_commercial_cli::exit;
+use tpt_commercial_cli::{config, exit};
 use tpt_policy_core::{evaluate, parse_policy, Decision, ENGINE_VERSION};
 
 const SELF_TEST_POLICY: &str = "\
@@ -123,19 +123,14 @@ fn check_working_directory() -> Check {
 
 /// The config layout from spec §19. The directory itself is optional.
 fn check_config_directory() -> Check {
-    const SUBDIRS: [&str; 5] = ["config", "policies", "schemas", "templates", "reports"];
-    let root = Path::new("tpt");
-    if !root.is_dir() {
+    let Some(root) = config::root_in(Path::new(".")) else {
         return (
             Status::Ok,
             "config directory",
             "./tpt not found; this is optional, so built-in defaults apply".to_string(),
         );
-    }
-    let missing: Vec<&str> = SUBDIRS
-        .into_iter()
-        .filter(|d| !root.join(d).is_dir())
-        .collect();
+    };
+    let missing = config::missing_subdirs(&root);
     if missing.is_empty() {
         (
             Status::Ok,

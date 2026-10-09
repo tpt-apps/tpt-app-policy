@@ -821,6 +821,10 @@ source = "git+https://github.com/TPT-Solutions/tpt-capsec?rev=799eeff4a4acd155c1
 [[package]]
 name = "tpt-commercial-cli"
 version = "2026.1.0"
+dependencies = [
+ "clap",
+ "serde_json",
+]
 
 [[package]]
 name = "tpt-data"

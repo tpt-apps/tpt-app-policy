@@ -4,10 +4,13 @@ use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::time::Instant;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use serde_json::Value;
+use serde_json::{json, Value};
+use tpt_commercial_cli::config;
 use tpt_commercial_cli::exit;
+use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_policy_core::{evaluate, parse_policy, run_tests, Decision, Policy};
 
 mod doctor;
@@ -22,6 +25,8 @@ mod serve;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -93,8 +98,10 @@ enum Format {
 }
 
 fn main() -> ExitCode {
-    match Cli::parse().command {
-        Command::Validate { policy, quiet } => match load_policy(&policy) {
+    let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    match cli.command {
+        Command::Validate { policy, quiet } => match load_policy(&policy, &log) {
             Ok(p) => {
                 if !quiet {
                     println!(
@@ -114,32 +121,33 @@ fn main() -> ExitCode {
             input,
             format,
             output,
-        } => decide(&policy, &input, format, false, output.as_deref()),
+        } => decide(&policy, &input, format, false, output.as_deref(), &log),
         Command::Explain {
             policy,
             input,
             format,
             output,
-        } => decide(&policy, &input, format, true, output.as_deref()),
+        } => decide(&policy, &input, format, true, output.as_deref(), &log),
         Command::Run { policy, output } => decide(
             &policy,
             Path::new("-"),
             Format::Json,
             false,
             output.as_deref(),
+            &log,
         ),
-        Command::Test { policy, quiet } => run_policy_tests(&policy, quiet),
+        Command::Test { policy, quiet } => run_policy_tests(&policy, quiet, &log),
         Command::Serve {
             policy,
             listen,
             token,
-        } => serve_policy(&policy, &listen, token),
+        } => serve_policy(&policy, &listen, token, &log),
         Command::Doctor => ExitCode::from(doctor::run()),
     }
 }
 
-fn serve_policy(path: &Path, listen: &str, token: Option<String>) -> ExitCode {
-    let policy = match load_policy(path) {
+fn serve_policy(path: &Path, listen: &str, token: Option<String>, log: &Logger) -> ExitCode {
+    let policy = match load_policy(path, log) {
         Ok(p) => p,
         Err(code) => return code,
     };
@@ -148,6 +156,10 @@ fn serve_policy(path: &Path, listen: &str, token: Option<String>) -> ExitCode {
             "warning: listening on {listen} without a token; anyone who can reach this address can evaluate policies. Set TPT_POLICY_TOKEN or listen on 127.0.0.1."
         );
     }
+    log.info(
+        "serving",
+        &[("listen", json!(listen)), ("auth", json!(token.is_some()))],
+    );
     match serve::serve(policy, listen, token) {
         Ok(()) => ExitCode::from(exit::SUCCESS),
         Err(e) => {
@@ -162,22 +174,42 @@ fn is_loopback(listen: &str) -> bool {
     matches!(host, "127.0.0.1" | "localhost" | "[::1]" | "::1")
 }
 
-fn load_policy(path: &Path) -> Result<Policy, ExitCode> {
-    let text = fs::read_to_string(path).map_err(|e| {
+fn load_policy(arg: &Path, log: &Logger) -> Result<Policy, ExitCode> {
+    let path = config::resolve_policy(arg);
+    if path != arg {
+        log.debug(
+            "policy found in config folder",
+            &[
+                ("from", json!(arg.display().to_string())),
+                ("path", json!(path.display().to_string())),
+            ],
+        );
+    }
+    let text = fs::read_to_string(&path).map_err(|e| {
         eprintln!("error: cannot read policy '{}': {e}", path.display());
         ExitCode::from(exit::IO_ERROR)
     })?;
-    parse_policy(&text).map_err(|e| {
+    let policy = parse_policy(&text).map_err(|e| {
         eprintln!("{e}\n  file: {}", path.display());
         ExitCode::from(exit::INVALID_POLICY)
-    })
+    })?;
+    log.info(
+        "policy loaded",
+        &[
+            ("policy", json!(policy.name)),
+            ("version", json!(policy.version)),
+            ("rules", json!(policy.rules.len())),
+            ("path", json!(path.display().to_string())),
+        ],
+    );
+    Ok(policy)
 }
 
 /// Largest input the CLI will read. Larger inputs are refused, so one command
 /// cannot exhaust memory. The HTTP service has its own 1 MB limit.
 const MAX_INPUT_BYTES: u64 = 10 * 1024 * 1024;
 
-fn read_input(path: &Path) -> Result<Value, ExitCode> {
+fn read_input(path: &Path, log: &Logger) -> Result<Value, ExitCode> {
     let (source, text) = if path == Path::new("-") {
         let mut buf = String::new();
         let result = io::stdin()
@@ -207,6 +239,10 @@ fn read_input(path: &Path) -> Result<Value, ExitCode> {
         );
         return Err(ExitCode::from(exit::INVALID_INPUT));
     }
+    log.info(
+        "input read",
+        &[("source", json!(source)), ("bytes", json!(text.len()))],
+    );
     serde_json::from_str(&text).map_err(|e| {
         eprintln!(
             "error: input is not valid JSON\n  why: {e}\n  fix: check the JSON syntax at the line shown\n  file: {source}"
@@ -221,17 +257,37 @@ fn decide(
     format: Format,
     explain: bool,
     output: Option<&Path>,
+    log: &Logger,
 ) -> ExitCode {
-    let policy = match load_policy(policy_path) {
+    let started = Instant::now();
+    let policy = match load_policy(policy_path, log) {
         Ok(p) => p,
         Err(code) => return code,
     };
-    let input = match read_input(input_path) {
+    let input = match read_input(input_path, log) {
         Ok(v) => v,
         Err(code) => return code,
     };
 
     let evaluation = evaluate(&policy, &input);
+    let code = decision_exit_code(evaluation.decision);
+    log.info(
+        "decision",
+        &[
+            ("decision", json!(evaluation.decision.to_string())),
+            ("exit_code", json!(code)),
+            ("elapsed_ms", json!(started.elapsed().as_millis() as u64)),
+        ],
+    );
+    log.debug(
+        "evaluation details",
+        &[
+            ("input_sha256", json!(evaluation.input_sha256)),
+            ("matched_rules", json!(evaluation.matched_rules)),
+            ("failed_rules", json!(evaluation.failed_rules.len())),
+            ("engine_version", json!(evaluation.engine_version)),
+        ],
+    );
     let text = match format {
         Format::Json => format!("{}\n", tpt_report::json(&evaluation)),
         Format::Text => tpt_report::terminal(&evaluation, explain),
@@ -248,11 +304,11 @@ fn decide(
     } else {
         print!("{text}");
     }
-    ExitCode::from(decision_exit_code(evaluation.decision))
+    ExitCode::from(code)
 }
 
-fn run_policy_tests(path: &Path, quiet: bool) -> ExitCode {
-    let policy = match load_policy(path) {
+fn run_policy_tests(path: &Path, quiet: bool, log: &Logger) -> ExitCode {
+    let policy = match load_policy(path, log) {
         Ok(p) => p,
         Err(code) => return code,
     };
@@ -273,6 +329,10 @@ fn run_policy_tests(path: &Path, quiet: bool) -> ExitCode {
             println!("FAIL {}: {}", outcome.name, outcome.message);
         }
     }
+    log.info(
+        "tests run",
+        &[("total", json!(outcomes.len())), ("failed", json!(failed))],
+    );
     if failed == 0 {
         if !quiet {
             println!();

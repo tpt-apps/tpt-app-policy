@@ -2,6 +2,9 @@
 //!
 //! Exit codes are part of the public interface. Do not renumber them.
 
+pub mod config;
+pub mod log;
+
 /// Stable process exit codes.
 pub mod exit {
     /// The command succeeded (validate passed, all tests passed).
