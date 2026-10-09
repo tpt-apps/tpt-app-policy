@@ -1,0 +1,4 @@
+email,country,amount,fee,status,fullName,total,note
+ada@example.com,NZ,120.5,4.25,active,Ada Lovelace,124.75,
+alan@example.com,UK,99,1,active,Alan Turing,100,
+mary@example.com,NZ,0,0,active,Mary Shelley,0,no charge

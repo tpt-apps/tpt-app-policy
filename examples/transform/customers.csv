@@ -1,0 +1,6 @@
+first_name,last_name,email,country,amount,fee,status
+ Ada ,Lovelace,ADA@EXAMPLE.COM,,120.50,4.25,active
+Alan,Turing,alan@example.com,UK,99,1,active
+Grace,Hopper,grace@example.com,US,abc,2,active
+Linus,Torvalds,linus@example.com,,0,0,inactive
+Mary,Shelley,mary@example.com,,0,0,active

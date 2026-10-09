@@ -523,6 +523,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tpt-transform"
+version = "2026.1.0"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tpt-data-core",
+]
+
+[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

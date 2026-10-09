@@ -1,0 +1,1 @@
+{"input":{"amount":"abc","country":"US","email":"grace@example.com","fee":"2","first_name":"Grace","last_name":"Hopper","status":"active"},"reason":"step 5 (to_number): field 'amount': 'abc' is not a number","row":3}

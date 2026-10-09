@@ -191,11 +191,11 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ## Phase 6 — Transformation → TPT Data Transformer
 
-- [ ] Pipeline YAML engine (§13.2)
-- [ ] Transforms: rename, delete, select, trim, case, type conversion, defaults, conditional values, combine/split, map, filter, calculated fields
-- [ ] Formats: CSV, JSON, JSONL
-- [ ] CLI `tpt-transform`; `doctor`
-- [ ] Docs, examples, landing page, Gumroad listing, bundle
+- [x] Pipeline YAML engine (§13.2). A pipeline is a YAML list of single-key steps, validated before any record is read.
+- [x] Transforms: rename, delete, select, trim, case, type conversion, defaults, conditional values, combine/split, map, filter, calculated fields. Field names are dotted paths. Covered by unit tests.
+- [x] Formats: CSV, JSON, JSONL (in and out, with `--to`)
+- [x] CLI `tpt-transform` with `run`, `check` and `doctor`
+- [~] Docs, examples, landing page, Gumroad listing, bundle. **Done:** `docs/DATA_TRANSFORMER.md`, `examples/transform/` with golden output, `scripts/package.sh transform`. **Missing:** landing page, Gumroad listing; bundle not built yet.
 - [ ] Tag **Data Transformer 1.0**
 - [ ] (Later) joins, lookups, reference tables, large-file streaming
 

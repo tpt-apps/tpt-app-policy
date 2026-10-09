@@ -1,11 +1,12 @@
 #!/usr/bin/env sh
 # Builds a release bundle in the layout from spec §23 and writes checksums (§40).
 #
-# Usage: scripts/package.sh [policy|data]
+# Usage: scripts/package.sh [policy|data|document|invoice|transform]
 #   policy (default): TPT App Policy, binary tpt-policy
 #   data:             TPT Data Validator, binary tpt-data
 #   document:         TPT Document Validator, binary tpt-document
 #   invoice:          TPT Invoice Validator, binary tpt-invoice
+#   transform:        TPT Data Transformer, binary tpt-transform
 #
 # Output: dist/<name>-<version>-<platform>.tar.gz, and dist/SHA256SUMS listing
 # every archive in dist/.
@@ -37,9 +38,14 @@ case "$PRODUCT" in
         BINARY=tpt-document
         NAME_PREFIX=tpt-document
         ;;
+    transform)
+        CRATE=tpt-transform
+        BINARY=tpt-transform
+        NAME_PREFIX=tpt-transform
+        ;;
     *)
         echo "error: unknown product '$PRODUCT'" >&2
-        echo "  fix: use 'policy', 'data', 'document' or 'invoice'" >&2
+        echo "  fix: use 'policy', 'data', 'document', 'invoice' or 'transform'" >&2
         exit 1
         ;;
 esac
@@ -98,6 +104,13 @@ elif [ "$PRODUCT" = invoice ]; then
     mkdir -p "$BUNDLE/examples"
     cp -R examples/invoices/. "$BUNDLE/examples/"
     for doc in INVOICE_VALIDATOR DOCUMENT_VALIDATOR SCHEMA_REFERENCE POLICY_REFERENCE SECURITY; do
+        cp "docs/$doc.md" "$BUNDLE/docs/"
+    done
+    cp CHANGELOG.md "$BUNDLE/"
+elif [ "$PRODUCT" = transform ]; then
+    mkdir -p "$BUNDLE/examples"
+    cp -R examples/transform/. "$BUNDLE/examples/"
+    for doc in DATA_TRANSFORMER SECURITY; do
         cp "docs/$doc.md" "$BUNDLE/docs/"
     done
     cp CHANGELOG.md "$BUNDLE/"

@@ -20,7 +20,7 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
   optional bearer token from `TPT_POLICY_TOKEN`, 1 MB body limit.
 - Stable exit codes, documented in the README.
 - Release bundle script (`scripts/package.sh`) with SHA-256 checksums.
-- Dockerfile, not yet built or tested.
+- Dockerfile, built and tested on Windows with Docker Desktop. Linux and macOS not yet tested.
 - `tpt-report` crate: JSON and terminal reporters. The binary uses it for `check`,
   `run` and `explain`.
 - Golden tests for `check` output and inline `test` runs (`crates/tpt-app-policy/tests/golden.rs`).
@@ -46,6 +46,16 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 - Checks line items, subtotal, tax, total, approved suppliers and duplicates
   (file-based ledger), then an optional policy. Verdicts: PASS, REVIEW, REJECT.
 - Money is checked to within one cent.
+
+### Data Transformer (`tpt-transform`, in development)
+
+- Pipelines in YAML: trim, case, rename, delete, select, type conversion, defaults,
+  conditional values, combine, split, map, filter and calculated fields.
+- Reads and writes CSV, JSON and JSON Lines. Rejected records go to `rejected.jsonl`
+  with the reason; filtered records are counted, not rejected.
+- `run`, `check` and `doctor`. Steps and exit codes are documented in
+  `docs/DATA_TRANSFORMER.md`.
+- The whole input is read into memory. Streaming and joins are not in this version.
 
 ### Known limits
 

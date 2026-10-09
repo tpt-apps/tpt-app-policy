@@ -1,0 +1,39 @@
+# Cleans a customer export: trims spaces, normalises names and email,
+# converts money columns, fills a default country, and adds a total.
+name: customer-clean
+version: 1.0.0
+pipeline:
+  - trim:
+      fields: ["*"]
+
+  - lowercase:
+      fields: [email]
+
+  - rename:
+      first_name: firstName
+      last_name: lastName
+
+  - combine:
+      fields: [firstName, lastName]
+      into: fullName
+      separator: " "
+
+  - to_number:
+      fields: [amount, fee]
+
+  - defaults:
+      country: NZ
+
+  - conditional:
+      when: {field: amount, equals: 0}
+      set: {note: "no charge"}
+
+  - calculate:
+      into: total
+      operation: add
+      fields: [amount, fee]
+      decimals: 2
+
+  - filter:
+      field: status
+      not_equals: inactive
