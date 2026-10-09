@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Builds a release bundle in the layout from spec §23 and writes checksums (§40).
 #
-# Usage: scripts/package.sh [policy|data|document|invoice|transform|approve|evidence]
+# Usage: scripts/package.sh [policy|data|document|invoice|transform|approve|evidence|ai-guard]
 #   policy (default): TPT App Policy, binary tpt-policy
 #   data:             TPT Data Validator, binary tpt-data
 #   document:         TPT Document Validator, binary tpt-document
@@ -9,6 +9,7 @@
 #   transform:        TPT Data Transformer, binary tpt-transform
 #   approve:          TPT Approval Engine, binary tpt-approve
 #   evidence:         TPT Compliance Evidence Processor, binary tpt-evidence
+#   ai-guard:         TPT AI Action Guard, binary tpt-ai-guard
 #
 # Output: dist/<name>-<version>-<platform>.tar.gz, and dist/SHA256SUMS listing
 # every archive in dist/.
@@ -45,6 +46,11 @@ case "$PRODUCT" in
         BINARY=tpt-transform
         NAME_PREFIX=tpt-transform
         ;;
+    ai-guard)
+        CRATE=tpt-ai-guard
+        BINARY=tpt-ai-guard
+        NAME_PREFIX=tpt-ai-guard
+        ;;
     evidence)
         CRATE=tpt-evidence
         BINARY=tpt-evidence
@@ -57,7 +63,7 @@ case "$PRODUCT" in
         ;;
     *)
         echo "error: unknown product '$PRODUCT'" >&2
-        echo "  fix: use 'policy', 'data', 'document', 'invoice', 'transform', 'approve' or 'evidence'" >&2
+        echo "  fix: use 'policy', 'data', 'document', 'invoice', 'transform', 'approve', 'evidence' or 'ai-guard'" >&2
         exit 1
         ;;
 esac
@@ -116,6 +122,13 @@ elif [ "$PRODUCT" = invoice ]; then
     mkdir -p "$BUNDLE/examples"
     cp -R examples/invoices/. "$BUNDLE/examples/"
     for doc in INVOICE_VALIDATOR DOCUMENT_VALIDATOR SCHEMA_REFERENCE POLICY_REFERENCE SECURITY; do
+        cp "docs/$doc.md" "$BUNDLE/docs/"
+    done
+    cp CHANGELOG.md "$BUNDLE/"
+elif [ "$PRODUCT" = ai-guard ]; then
+    mkdir -p "$BUNDLE/examples"
+    cp -R examples/ai-guard/. "$BUNDLE/examples/"
+    for doc in AI_ACTION_GUARD SECURITY; do
         cp "docs/$doc.md" "$BUNDLE/docs/"
     done
     cp CHANGELOG.md "$BUNDLE/"

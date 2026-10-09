@@ -80,6 +80,19 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 - `process`, `verify` and `doctor`. Steps and exit codes are documented in
   `docs/COMPLIANCE_EVIDENCE.md`.
 
+### AI Action Guard (`tpt-ai-guard`, in development)
+
+- Action policies in YAML. Each rule names an action, optional conditions in `tpt-policy`
+  form, and a decision: `allow`, `deny` or `require_approval`. The spec's bare-list form
+  is accepted too.
+- Answers ALLOW, DENY or REQUIRE_APPROVAL with a reason. The most restrictive match wins.
+  An action no rule covers is denied.
+- The verdict holds a fingerprint of the request, not its fields. The guard never runs
+  the action.
+- `check`, `validate` and `doctor`. Steps and exit codes are documented in
+  `docs/AI_ACTION_GUARD.md`.
+- Not yet: MCP gating (`tpt-mcpbox`), capability security (`tpt-capsec`), REST, Docker.
+
 ### Known limits
 
 - Single-threaded HTTP server. Not intended for direct internet exposure.

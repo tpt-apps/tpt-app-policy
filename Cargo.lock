@@ -428,6 +428,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tpt-ai-guard"
+version = "2026.1.0"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tpt-commercial-cli",
+ "tpt-policy-core",
+]
+
+[[package]]
 name = "tpt-app-policy"
 version = "2026.1.0"
 dependencies = [

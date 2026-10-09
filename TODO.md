@@ -231,11 +231,11 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ## Phase 10 — AI → TPT AI Action Guard
 
-- [ ] Action-request schema + policy (ALLOW / DENY / REQUIRE_APPROVAL)
-- [ ] tpt-mcpbox integration for MCP/tool gating
-- [ ] Capability security via tpt-capsec
-- [ ] CLI `tpt-ai-guard`; REST; Docker image; `doctor`
-- [ ] Docs, examples (e.g. refund > $5,000), landing page, Gumroad listing, bundle
+- [x] Action-request schema + policy (ALLOW / DENY / REQUIRE_APPROVAL). Most restrictive match wins; no match is DENY.
+- [ ] tpt-mcpbox integration for MCP/tool gating. **Blocked:** tpt-mcpbox is not in this repository.
+- [ ] Capability security via tpt-capsec. **Blocked:** tpt-capsec is not in this repository.
+- [~] CLI `tpt-ai-guard` with `check`, `validate` and `doctor`. **Not done:** REST, Docker image.
+- [~] Docs, examples, bundle. **Done:** `docs/AI_ACTION_GUARD.md`, `examples/ai-guard/`, `scripts/package.sh ai-guard` (Windows). **Missing:** landing page, Gumroad listing, Linux bundle.
 - [ ] Tag **AI Action Guard 1.0**
 
 ## Portfolio extra — TPT Rules SDK (§17)

@@ -1,0 +1,31 @@
+# What an AI agent may do with customer records.
+# The most restrictive matching rule wins. An action no rule covers is denied.
+name: customer-actions
+version: "1.0.0"
+rules:
+  - id: refund-within-limit
+    action: refund_customer
+    when:
+      amount:
+        lte: 5000
+    decision: allow
+    reason: refund is within the $5,000 limit
+
+  - id: refund-over-limit
+    action: refund_customer
+    when:
+      amount:
+        gt: 5000
+    decision:
+      require_approval: true
+    reason: refund exceeds $5,000 limit
+
+  - id: no-customer-deletion
+    action: delete_customer
+    decision: deny
+    reason: customer records are deleted only by the data team
+
+  - id: order-lookup
+    action: lookup_order
+    decision: allow
+    reason: read-only lookups are allowed
