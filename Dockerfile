@@ -1,6 +1,7 @@
 # Container image for TPT App Policy (spec §25).
 #
-# Not yet built or tested: Docker was not available when this was written.
+# Built and tested on Docker Desktop 29.8.2 (Windows): doctor, check, serve
+# (healthz, bearer auth), and running as the non-root tpt user (uid 10001).
 #
 # Build:  docker build -t tpt/app-policy .
 # Run a policy as an HTTP service, reachable from the host:

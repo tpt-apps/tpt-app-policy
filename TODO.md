@@ -103,7 +103,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] REST: `tpt-policy serve`, `POST /v1/evaluate` (plus `GET /healthz`). Localhost by default, optional bearer token, 1 MB body limit. Tested over real sockets. Single-threaded.
 - [x] `doctor` subcommand: runtime, config, permissions, install, version, optional deps (§29.5). Checks version, platform, working-directory write test, `./tpt` layout (§19, optional), and a built-in self-test. Optional-dependency checks are not needed yet, since no optional dependencies exist.
 - [ ] Signed policy bundles / release checksums via tpt-crypto (optional signatures)
-- [~] Docker image (`tpt/app-policy`) (§25). `Dockerfile` written. **Not built or tested:** Docker is not installed here.
+- [x] Docker image (`tpt/app-policy`) (§25). Built and tested on Docker Desktop (Windows): `doctor`, `check` (matches the golden output), `serve` with healthz and bearer auth, non-root user. Image is 117 MB. Linux and macOS not yet tested.
 - [x] Release bundle layout (§23). `scripts/package.sh` builds it, with checksums. Tested on Windows (Git Bash) only. Linux and macOS not yet tested. It refuses to package without `LICENSE-MIT` and `LICENSE-APACHE`.
 - [ ] Windows x64 build + install test on a clean machine
 - [ ] Linux x64 build + install test on a clean machine
@@ -146,7 +146,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Evaluation: equality, inequality, greater/less than, AND, OR, existence checks
 - [x] Decision outputs
 - [x] Diagnostics: matched rules, failed rules, explanations, stable exit codes
-- [ ] Interfaces: CLI, stdin/stdout, JSON, REST, Docker (Docker not tested)
+- [x] Interfaces: CLI, stdin/stdout, JSON, REST, Docker (Docker tested on Windows only)
 - [x] Testing: policy test files, golden tests, deterministic output tests
 - [x] Docs: quickstart, policy reference, CLI reference, integration example, troubleshooting
 - [ ] **Success test (§51):** a new user goes from zero to a working rule in < 15 minutes without contacting you
