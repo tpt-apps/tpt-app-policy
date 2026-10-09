@@ -3,9 +3,9 @@
 Define business rules in a YAML file. Check JSON data against them. Get a
 decision and the rules that produced it. Runs locally, offline, with no account.
 
-> Status: **0.1 (pre-release).** The CLI, policy format, HTTP service and
-> `doctor` command work. The Docker image is written but not tested, and the
-> Windows/Linux release bundle waits on the licence. See [TODO.md](TODO.md).
+> Status: **0.1 (pre-release), not yet tagged.** The CLI, policy format, HTTP
+> service and `doctor` command work. The Docker image was tested on Windows only.
+> Licensed MIT OR Apache-2.0. See [TODO.md](TODO.md).
 
 ## Documentation
 

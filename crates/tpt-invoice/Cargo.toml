@@ -21,3 +21,5 @@ tpt-policy-core.workspace = true
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+csv.workspace = true
+tiny_http.workspace = true

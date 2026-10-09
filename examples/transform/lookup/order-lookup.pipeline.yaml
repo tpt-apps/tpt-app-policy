@@ -1,0 +1,13 @@
+# Adds the country name and region to each order, from countries.csv, which is
+# next to this file. An order whose country code is not in the table is rejected.
+name: order-lookup
+version: 1.0.0
+pipeline:
+  - lookup:
+      field: country
+      table: countries.csv
+      key: code
+      add:
+        country_name: name
+        region: region
+      on_missing: reject

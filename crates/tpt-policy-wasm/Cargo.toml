@@ -1,0 +1,23 @@
+[package]
+name = "tpt-policy-wasm"
+description = "TPT policy evaluation as a WebAssembly module with a plain C ABI, for embedding"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+# This crate does not inherit the workspace lints: the C ABI needs `unsafe`
+# at the boundary, which the workspace forbids. All of the logic is safe code
+# in `evaluate_text`, and the boundary is the `extern "C"` functions at the end
+# of lib.rs.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[dependencies]
+tpt-policy-core.workspace = true
+tpt-report.workspace = true
+serde_json.workspace = true

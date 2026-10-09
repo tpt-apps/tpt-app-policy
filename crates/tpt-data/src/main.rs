@@ -185,6 +185,12 @@ fn validate(
         }
     }
 
+    // A JSON array that breaks off part-way is an input error. Records before
+    // the break are already written, so the outputs are partial. The summary is not.
+    if let Some(e) = items.failure() {
+        return Err(data_error(&e));
+    }
+
     valid_out
         .finish()
         .map_err(|e| io_error(out, "cannot finish valid records", &e))?;

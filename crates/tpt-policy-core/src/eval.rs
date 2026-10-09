@@ -36,6 +36,13 @@ pub struct PolicyRef {
     pub version: String,
 }
 
+impl PolicyRef {
+    /// The policy and version as one label, e.g. `purchasing@2.1.0`.
+    pub fn id(&self) -> String {
+        format!("{}@{}", self.name, self.version)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct FailedRule {
     pub rule: String,

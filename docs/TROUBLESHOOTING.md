@@ -53,8 +53,9 @@ chmod +x bin/tpt-policy
 **`error: ... at <path>`** from `validate`, `check`, `test` or `serve`.
 
 - Read the **what**, **where**, **why** and **fix** lines. The **where** is a
-  key path such as `rules[0].when.amount.greater_than`. Line numbers are given
-  only for YAML syntax errors.
+  key path such as `rules[0].when.amount.greater_than`, followed by the line
+  where the problem is, such as `(line 6)`. YAML syntax errors give the line and
+  column instead.
 - Operators are spelled `gt`, `gte`, `lt`, `lte`, not `greater_than`. The full list is in
   [POLICY_REFERENCE.md](POLICY_REFERENCE.md#operators).
 - Indentation errors in YAML are the most common cause. Use spaces, not tabs.

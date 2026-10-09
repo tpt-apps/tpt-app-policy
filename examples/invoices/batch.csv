@@ -1,0 +1,6 @@
+invoice_number,issue_date,supplier.name,supplier.tax_id,currency,subtotal,tax_rate,tax,total,line.description,line.quantity,line.unit_price,line.amount
+INV-2001,2026-03-02,Harbour Supplies Ltd,123-456-789,NZD,500.00,0.15,75.00,575.00,Office chair,2,200.00,400.00
+INV-2001,2026-03-02,Harbour Supplies Ltd,123-456-789,NZD,500.00,0.15,75.00,575.00,Desk lamp,1,100.00,100.00
+INV-2002,2026-03-05,Harbour Supplies Ltd,123-456-789,NZD,100.00,0.15,15.00,120.00,Stapler,2,50.00,100.00
+INV-2003,2026-03-06,Harbour Supplies Ltd,123-456-789,NZD,100.00,0.15,15.00,115.00,Paper,1,100.00,100.00
+INV-2003,2026-03-06,Harbour Supplies Ltd,123-456-789,AUD,100.00,0.15,15.00,115.00,Pens,1,10.00,10.00

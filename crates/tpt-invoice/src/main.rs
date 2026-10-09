@@ -16,10 +16,14 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use serde_json::json;
-use tpt_document::{file_sha256, read_document, DocError, Parsed};
-use tpt_invoice::{check_invoice, duplicate_key, InvoiceResult, Ledger, Suppliers, Verdict};
+use tpt_document::{file_sha256, DocError, Parsed};
+use tpt_invoice::{
+    check_invoice, duplicate_key, read_invoices, InvoiceResult, Ledger, Suppliers, Verdict,
+};
 use tpt_policy_core::{parse_policy, Policy};
 use tpt_schema::{parse_schema, Schema, SCHEMA_ENGINE_VERSION};
+
+mod serve;
 
 const EXIT_IO: u8 = 1;
 const EXIT_USAGE: u8 = 2;
@@ -37,9 +41,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Check one or more invoices (JSON or XML)
+    /// Check one or more invoices (JSON, XML or CSV)
     Validate {
-        /// Invoice files: .json or .xml
+        /// Invoice files: .json or .xml (one invoice each), or .csv (one row per invoice line)
         #[arg(required = true)]
         invoices: Vec<PathBuf>,
         /// Schema for the invoice header fields (YAML)
@@ -58,6 +62,28 @@ enum Command {
         /// Write one result file per invoice into this folder, as <name>.result.json
         #[arg(long, value_name = "DIR")]
         out: Option<PathBuf>,
+    },
+    /// Serve invoice checks over HTTP (POST /v1/validate)
+    Serve {
+        /// Schema for the invoice header fields (YAML)
+        #[arg(long, value_name = "FILE")]
+        schema: PathBuf,
+        /// Optional business policy (YAML)
+        #[arg(long, value_name = "FILE")]
+        policy: Option<PathBuf>,
+        /// Optional list of approved supplier tax IDs (JSON array)
+        #[arg(long, value_name = "FILE")]
+        suppliers: Option<PathBuf>,
+        /// Optional ledger of processed invoices (JSON lines), shared by all requests
+        #[arg(long, value_name = "FILE")]
+        ledger: Option<PathBuf>,
+        /// Address to listen on. Defaults to localhost only.
+        #[arg(long, default_value = "127.0.0.1:8080")]
+        listen: String,
+        /// Bearer token required on POST /v1/validate. Read from TPT_INVOICE_TOKEN
+        /// so it does not appear in shell history.
+        #[arg(long, env = "TPT_INVOICE_TOKEN", hide_env_values = true)]
+        token: Option<String>,
     },
     /// Check that this install works
     Doctor,
@@ -81,6 +107,24 @@ fn main() -> ExitCode {
                 ledger: ledger.as_deref(),
                 out: out.as_deref(),
             },
+        ),
+        Command::Serve {
+            schema,
+            policy,
+            suppliers,
+            ledger,
+            listen,
+            token,
+        } => serve_invoices(
+            &Inputs {
+                schema: &schema,
+                policy: policy.as_deref(),
+                suppliers: suppliers.as_deref(),
+                ledger: ledger.as_deref(),
+                out: None,
+            },
+            &listen,
+            token,
         ),
         Command::Doctor => doctor(),
     };
@@ -124,8 +168,8 @@ fn validate(invoices: &[PathBuf], inputs: &Inputs) -> u8 {
 
     let mut worst = Verdict::Pass;
     for path in invoices {
-        let parsed = match read_document(path) {
-            Ok(p) => p,
+        let found = match read_invoices(path) {
+            Ok(found) => found,
             Err(e) => return report_read_error(&e),
         };
         let sha = match file_sha256(path) {
@@ -135,37 +179,102 @@ fn validate(invoices: &[PathBuf], inputs: &Inputs) -> u8 {
                 return EXIT_IO;
             }
         };
-        let result = check_invoice(
-            &schema,
-            policy.as_ref(),
-            suppliers.as_ref(),
-            ledger.as_ref(),
-            &parsed,
-        );
+        for invoice in found {
+            let result = check_invoice(
+                &schema,
+                policy.as_ref(),
+                suppliers.as_ref(),
+                ledger.as_ref(),
+                &invoice.parsed,
+            );
 
-        // Accepted invoices join the ledger at once, so a repeat later in this run is caught.
-        if let (Some(ledger), Parsed::Ok { value, .. }) = (ledger.as_mut(), &parsed) {
-            if result.verdict != Verdict::Reject {
-                if let Some(key) = duplicate_key(value) {
-                    if let Err(e) = ledger.record(&key) {
-                        eprintln!(
-                            "error: cannot write ledger: {e}\n  fix: check the file is writable"
-                        );
-                        return EXIT_IO;
+            // Accepted invoices join the ledger at once, so a repeat later in this run is caught.
+            if let (Some(ledger), Parsed::Ok { value, .. }) = (ledger.as_mut(), &invoice.parsed) {
+                if result.verdict != Verdict::Reject {
+                    if let Some(key) = duplicate_key(value) {
+                        if let Err(e) = ledger.record(&key) {
+                            eprintln!(
+                                "error: cannot write ledger: {e}\n  fix: check the file is writable"
+                            );
+                            return EXIT_IO;
+                        }
                     }
                 }
             }
-        }
 
-        worst = worst.worst(result.verdict);
-        print_result(path, &result);
-        if let Some(dir) = inputs.out {
-            if let Err(code) = write_result(dir, path, &sha, &schema, policy.as_ref(), &result) {
-                return code;
+            worst = worst.worst(result.verdict);
+            print_result(&invoice.label, &result);
+            if let Some(dir) = inputs.out {
+                let file_name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_default();
+                let source = Source {
+                    file_name: &file_name,
+                    stem: &invoice.out_stem,
+                    sha: &sha,
+                };
+                if let Err(code) = write_result(dir, &source, &schema, policy.as_ref(), &result) {
+                    return code;
+                }
             }
         }
     }
     worst.exit_code()
+}
+
+/// `tpt-invoice serve`: load the inputs once, then check invoices over HTTP
+/// until stopped.
+fn serve_invoices(inputs: &Inputs, listen: &str, token: Option<String>) -> u8 {
+    let Ok(schema) = load_schema(inputs.schema) else {
+        return EXIT_USAGE;
+    };
+    let Ok(policy) = inputs.policy.map(load_policy).transpose() else {
+        return EXIT_USAGE;
+    };
+    let Ok(suppliers) = inputs.suppliers.map(load_suppliers).transpose() else {
+        return EXIT_USAGE;
+    };
+    let ledger = match inputs.ledger.map(Ledger::load).transpose() {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("error: cannot read ledger: {e}\n  fix: check the file is JSON lines, or remove it to start a new ledger");
+            return EXIT_IO;
+        }
+    };
+    let is_loopback = {
+        let host = listen.rsplit_once(':').map_or(listen, |(host, _)| host);
+        matches!(host, "127.0.0.1" | "localhost" | "[::1]" | "::1")
+    };
+    if token.is_none() && !is_loopback {
+        eprintln!(
+            "warning: listening on {listen} without a token; anyone who can reach this address can submit invoices. Set TPT_INVOICE_TOKEN or listen on 127.0.0.1."
+        );
+    }
+    let service = serve::Service {
+        schema,
+        policy,
+        suppliers,
+        ledger,
+        token,
+    };
+    match serve::serve(service, listen) {
+        Ok(()) => 0,
+        Err(e) => {
+            eprintln!("error: cannot serve on {listen}: {e}\n  fix: check the address is valid and the port is free");
+            EXIT_IO
+        }
+    }
+}
+
+/// Where an invoice came from, for its result file.
+struct Source<'a> {
+    /// The file the invoice was read from.
+    file_name: &'a str,
+    /// The name for the result file, without `.result.json`.
+    stem: &'a str,
+    /// SHA-256 of the file the invoice was read from.
+    sha: &'a str,
 }
 
 fn load_schema(path: &Path) -> Result<Schema, ()> {
@@ -204,12 +313,12 @@ fn report_read_error(e: &DocError) -> u8 {
     }
 }
 
-fn print_result(path: &Path, result: &InvoiceResult) {
+fn print_result(label: &str, result: &InvoiceResult) {
     let mut detail = String::new();
     if let Some(ev) = &result.evaluation {
         detail.push_str(&format!(" ({})", ev.decision));
     }
-    println!("{:<6} {}{detail}", result.verdict.label(), path.display());
+    println!("{:<6} {label}{detail}", result.verdict.label());
     for error in &result.schema_errors {
         println!("       schema {}: {}", error.field, error.reason);
     }
@@ -229,22 +338,17 @@ fn print_result(path: &Path, result: &InvoiceResult) {
 
 fn write_result(
     dir: &Path,
-    path: &Path,
-    sha: &str,
+    source: &Source,
     schema: &Schema,
     policy: Option<&Policy>,
     result: &InvoiceResult,
 ) -> Result<(), u8> {
-    let stem = path
-        .file_stem()
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "invoice".to_string());
     let file = json!({
         "tool": "tpt-invoice",
         "tool_version": env!("CARGO_PKG_VERSION"),
         "invoice": {
-            "file": path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
-            "sha256": sha,
+            "file": source.file_name,
+            "sha256": source.sha,
         },
         "schema": {
             "name": schema.name,
@@ -254,7 +358,7 @@ fn write_result(
         "policy": policy.map(|p| json!({ "name": p.name, "version": p.version })),
         "result": result,
     });
-    let out = dir.join(format!("{stem}.result.json"));
+    let out = dir.join(format!("{}.result.json", source.stem));
     let text = serde_json::to_string_pretty(&file).expect("result is serialisable");
     fs::write(&out, format!("{text}\n")).map_err(|e| {
         eprintln!(

@@ -2,9 +2,8 @@
 //!
 //! The pipeline is: read a record, check it against a schema, optionally
 //! evaluate it against a policy, then write it to the valid or invalid output.
-//! Records stream through one at a time, except JSON arrays, which are read in
-//! full (see [`input`]). Only the values needed for `unique` checks are kept
-//! between records.
+//! Records stream through one at a time (see [`input`]). Only the values
+//! needed for `unique` checks are kept between records.
 
 use std::fmt;
 

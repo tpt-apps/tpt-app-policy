@@ -2,12 +2,15 @@
 //!
 //! Reporters turn an [`Evaluation`] into output text. The JSON reporter is
 //! the machine format and must stay stable. The terminal reporter is for
-//! people. The HTML reporter is for data validation runs (see [`html`]).
+//! people. The HTML reporters are for data validation runs (see [`html`]) and
+//! for one policy decision (see [`evaluation`]). Both are for filing and review.
 
+pub mod evaluation;
 pub mod html;
 
 use tpt_policy_core::Evaluation;
 
+pub use evaluation::evaluation_html;
 pub use html::{
     data_report_html, document_report_html, DataReport, DocumentReport, DocumentRow, ReportRow,
 };
@@ -22,10 +25,7 @@ pub fn json(evaluation: &Evaluation) -> String {
 pub fn terminal(evaluation: &Evaluation, explain: bool) -> String {
     let mut lines = vec![
         format!("decision: {}", evaluation.decision),
-        format!(
-            "policy: {} (version {})",
-            evaluation.policy.name, evaluation.policy.version
-        ),
+        format!("policy: {}", evaluation.policy.id()),
     ];
     if !evaluation.approvers.is_empty() {
         lines.push(format!("approvers: {}", evaluation.approvers.join(", ")));

@@ -21,19 +21,22 @@ Checks the policy without evaluating anything.
 - Exits `2` with a diagnostic if the policy is invalid, or `1` if the file
   cannot be read.
 
-### `check <policy> <input> [--format json|text] [--output FILE]`
+### `check <policy> <input> [--format json|text|html] [--output FILE]`
 
 Evaluates one input and prints the decision. `<input>` is a JSON file, or `-`
 to read stdin.
 
 - `--format json` (default): the full evaluation as JSON.
 - `--format text`: a short readable summary.
+- `--format html`: one self-contained HTML page with the decision, the approvers,
+  the matched rules and the rules that did not match. No scripts and no external
+  links, so it can be attached to an email. Use `--output` to save it.
 - `--output FILE`: write the result to a file instead of stdout. Exit codes
   are unchanged. If the file cannot be written, the command exits `1`.
 - Exit code is the decision: `0` approved, `10` approval required, `20` review,
   `30` rejected.
 
-### `explain <policy> <input> [--format json|text] [--output FILE]`
+### `explain <policy> <input> [--format json|text|html] [--output FILE]`
 
 Like `check`, but also lists every matched rule's explanation and every failed
 rule with the first check that failed. Default format is `text`. `--output`

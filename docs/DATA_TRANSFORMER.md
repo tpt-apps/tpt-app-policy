@@ -170,6 +170,33 @@ Operations:
   `to_number` step before it.
 - Whole-number results are written as whole numbers. `decimals` rounds the result.
 
+### Lookups
+
+A `lookup` step copies values from a reference table into each record. The
+table is a `.csv`, `.json` or `.jsonl` file, read once before the run.
+
+```yaml
+- lookup:
+    field: country          # the record field holding the key
+    table: countries.csv    # relative to the pipeline file
+    key: code               # the table column holding the key
+    add:                    # new field in the record: table column
+      country_name: name
+      region: region
+    on_missing: reject      # or skip (the default)
+```
+
+- A key is matched as text, after trimming spaces. A missing or empty key has no match.
+- `on_missing: skip` (the default) keeps the record without the new fields.
+  `on_missing: reject` rejects it, with the key that was not found.
+- Keys in the table must be unique. A repeated key stops the run, before any
+  record is read, and names the key.
+- A table that cannot be read, or that breaks off part-way (a JSON file with
+  missing brackets), stops the run before any record is read.
+- Use `tpt-transform check` to test a pipeline and its tables without running it.
+
+An example is in `examples/transform/lookup/`.
+
 ## Conditions
 
 A condition names a `field` and exactly one of:
@@ -185,9 +212,10 @@ means the number `0` in a YAML file matches a CSV cell `0`.
 
 - The whole input is read into memory before the output is written. Large files
   need enough memory for their records. Streaming is planned for a later version.
-- JSON input must be a JSON array, or JSON Lines. Input is not streamed as an
-  array.
-- Joins, lookups and reference tables are not in this version.
+- JSON input must be a JSON array, or JSON Lines. A JSON array that breaks off
+  part-way stops the run with exit `3`, before anything is written.
+- Lookups read each table into memory. Joins between two large inputs are not
+  in this version. Only lookups against a reference table are.
 - Field names are paths through objects only. Items inside a list cannot be
   addressed by position, so a list is kept or changed as a whole.
 - Text is compared and converted as text. Locale-specific number formats, such as

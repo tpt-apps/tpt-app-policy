@@ -6,6 +6,7 @@
 
 mod error;
 mod eval;
+mod locate;
 mod model;
 mod parse;
 mod testing;

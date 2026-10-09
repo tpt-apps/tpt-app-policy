@@ -10,6 +10,12 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 
 ### Added
 
+- Policy versions are validated (`MAJOR`, `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`, numbers only). An unquoted decimal such as `1.10` is rejected with a fix.
+- `name@version` policy label, shown by `check`/`explain` and `validate`.
+- Policy errors give the line of the problem, e.g. `rules[0].when.amount.greater_than (line 6)`.
+- `tpt-policy check --format html` (and `explain`) writes one self-contained HTML page for a decision.
+- `tpt-policy-wasm` crate: policy evaluation as a WebAssembly module with a plain C ABI and no imports. A Node smoke test is in `crates/tpt-policy-wasm/js/smoke.mjs`.
+- `examples/embed.rs` in `tpt-policy-core`, and `docs/RULES_SDK.md`, the guide for embedding in Rust or WebAssembly.
 - `tpt-policy` CLI: `validate`, `check`, `explain`, `run` (stdin), `test`, `serve`, `doctor`.
 - Policy format: YAML rules with `equals`, `not_equals`, `gt`/`gte`/`lt`/`lte`,
   `in`/`not_in`, `contains`, `exists`, and `all`/`any`/`not` combinators.
@@ -33,6 +39,8 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 - Validates CSV, JSON and JSON Lines. Writes valid and invalid records, an error
   report, `summary.json`, and optionally `report.html`.
 - Optional policy check on valid records.
+- JSON arrays are read one record at a time, as CSV and JSON Lines are. A broken
+  array stops the run with exit `3`, and the outputs written so far are partial.
 
 ### Document Validator (`tpt-document`, in development)
 
@@ -46,6 +54,11 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 - Checks line items, subtotal, tax, total, approved suppliers and duplicates
   (file-based ledger), then an optional policy. Verdicts: PASS, REVIEW, REJECT.
 - Money is checked to within one cent.
+- CSV input: rows that share an invoice number form one invoice, and `line.*`
+  columns give its line items. One result file per invoice.
+- `tpt-invoice serve`: `POST /v1/validate` checks one invoice, and `GET /healthz`.
+  Optional bearer token from `TPT_INVOICE_TOKEN`, localhost by default. The ledger
+  is shared by all requests.
 
 ### Data Transformer (`tpt-transform`, in development)
 
@@ -55,7 +68,11 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
   with the reason; filtered records are counted, not rejected.
 - `run`, `check` and `doctor`. Steps and exit codes are documented in
   `docs/DATA_TRANSFORMER.md`.
-- The whole input is read into memory. Streaming and joins are not in this version.
+- `lookup` step: copies values from a reference table (CSV, JSON or JSON Lines)
+  into each record, matched on a key. `on_missing: skip` or `reject`. Tables are
+  read before the run, and a repeated key or a broken table stops it.
+- The whole input is read into memory before the output is written. Streaming
+  and joins between two inputs are not in this version.
 
 ### Approval Engine (`tpt-approve`, in development)
 
@@ -97,5 +114,4 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 
 - Single-threaded HTTP server. Not intended for direct internet exposure.
 - No regex (`matches`) operator yet.
-- No schema support yet (`tpt-schema` is an empty crate).
 - Policy versions are recorded but not enforced against the app version.

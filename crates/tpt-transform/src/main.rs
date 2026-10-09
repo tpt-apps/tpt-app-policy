@@ -115,13 +115,23 @@ fn load_pipeline(path: &Path) -> Result<PipelineFile, u8> {
         );
         EXIT_IO
     })?;
-    parse_pipeline(&text).map_err(|why| {
+    let mut pipeline = parse_pipeline(&text).map_err(|why| {
         eprintln!(
             "error: invalid pipeline '{}'\n  why: {why}\n  fix: check the step name and its indentation",
             path.display()
         );
         EXIT_USAGE
-    })
+    })?;
+    // Lookup tables are read now, so a missing or bad table is reported before any record is read.
+    let base = path.parent().unwrap_or_else(|| Path::new(""));
+    pipeline.load_tables(base).map_err(|why| {
+        eprintln!(
+            "error: invalid pipeline '{}'\n  why: {why}\n  fix: check the table path is relative to the pipeline file, and the table has a unique key",
+            path.display()
+        );
+        EXIT_USAGE
+    })?;
+    Ok(pipeline)
 }
 
 fn run_command(
@@ -144,7 +154,7 @@ fn run_command(
     };
     let out_format = to.unwrap_or(format);
 
-    let reader = match open(input, format) {
+    let mut reader = match open(input, format) {
         Ok(reader) => reader,
         Err(e) => {
             eprintln!("{e}");
@@ -168,7 +178,12 @@ fn run_command(
     }
 
     // Records are collected before writing, so the CSV columns are known in advance.
-    let result = run(&pipeline, reader);
+    let result = run(&pipeline, reader.by_ref());
+    // A JSON array that breaks off part-way stops the run before anything is written.
+    if let Some(e) = reader.failure() {
+        eprintln!("{e}");
+        return EXIT_INPUT;
+    }
     let headers = output_headers(input_headers.as_deref(), &result.kept);
 
     let transformed_name = format!("transformed.{}", out_format.name());

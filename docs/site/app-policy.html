@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TPT App Policy: approval rules you can read</title>
+<meta name="description" content="Write approval rules in plain YAML and get a decision with the reason, the approvers and a record you can audit. Runs offline on Windows and Linux.">
+<style>
+:root{--fg:#1d2330;--muted:#5b6475;--bg:#f7f8fa;--card:#ffffff;--line:#d9dde5;--accent:#2a5bd7;--accent-fg:#ffffff;--code:#eef1f5;--warn-bg:#fff4dc;--warn:#8a5a00}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--fg:#e8ebf0;--muted:#a3acbb;--bg:#15181e;--card:#1e222b;--line:#2f3542;--accent:#8aa8ff;--accent-fg:#101318;--code:#2a2f3a;--warn-bg:#3a2f18;--warn:#f5c063}}
+:root[data-theme="dark"]{--fg:#e8ebf0;--muted:#a3acbb;--bg:#15181e;--card:#1e222b;--line:#2f3542;--accent:#8aa8ff;--accent-fg:#101318;--code:#2a2f3a;--warn-bg:#3a2f18;--warn:#f5c063}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:46rem;margin:0 auto;padding:0 1rem}
+section{padding:2.2rem 0;border-top:1px solid var(--line)}
+h1{font-size:2rem;line-height:1.2;margin:2.5rem 0 .6rem}
+h2{font-size:1.35rem;margin:0 0 .8rem}
+p{margin:.5rem 0}
+.lead{font-size:1.15rem;color:var(--muted)}
+.draft{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:.6rem .9rem;font-size:.92rem;margin-top:1.2rem}
+.btn{display:inline-block;background:var(--accent);color:var(--accent-fg);text-decoration:none;padding:.65rem 1.1rem;border-radius:8px;font-weight:600;margin:.3rem .4rem .3rem 0}
+.btn.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+pre{background:var(--code);border-radius:8px;padding:.9rem 1rem;overflow-x:auto;font-size:.88rem;line-height:1.5;margin:.8rem 0}
+code{font-family:ui-monospace,Consolas,"Cascadia Mono",monospace;font-size:.92em}
+ul{padding-left:1.2rem;margin:.4rem 0}
+li{margin:.3rem 0}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:.8rem}
+@media (min-width:640px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+main,section,.card{min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem}
+.card h3{font-size:1rem;margin:0 0 .3rem}
+.card p{margin:0;color:var(--muted);font-size:.95rem}
+.price{font-size:1.6rem;font-weight:700}
+footer{padding:2rem 0 3rem;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Approval rules you can read, with a reason for every decision</h1>
+<p class="lead">TPT App Policy takes a rule file and a request, and tells you whether it is approved, needs review, needs approval, or is rejected. It also tells you who must approve, and why. It runs on your own computer, with no account and no internet connection.</p>
+<p>
+  <a class="btn" href="#buy">Buy for <span data-price>[price]</span></a>
+  <a class="btn secondary" href="#example">See an example</a>
+</p>
+<p class="draft">Draft, not published. The price and the download link are placeholders until they are set in Gumroad.</p>
+
+<section>
+  <h2>The problem</h2>
+  <p>Approval rules live in spreadsheets, in people's heads, and in code that only one person understands. A decision made last year cannot be explained today, and a change to a limit can be made without anyone seeing it.</p>
+</section>
+
+<section>
+  <h2>How it works</h2>
+  <div class="grid">
+    <div class="card"><h3>1. Write the rules</h3><p>Plain YAML: a rule names a field, a condition, and a decision.</p></div>
+    <div class="card"><h3>2. Send a request</h3><p>A JSON file, a line on standard input, or a request to the local HTTP service.</p></div>
+    <div class="card"><h3>3. Get the decision</h3><p>Approved, review, approval required or rejected, with the approvers and the rules that matched.</p></div>
+    <div class="card"><h3>4. Keep the record</h3><p>A fixed output format, a hash of the input, and the policy version. The same input always gives the same output.</p></div>
+  </div>
+</section>
+
+<section id="example">
+  <h2>Example</h2>
+  <p>A rule file for expense claims:</p>
+<pre><code>policy: expense
+version: "1.0.0"
+
+rules:
+  - id: manager-approval
+    description: Expenses over $1,000 need manager approval
+    when:
+      expense.amount:
+        gt: 1000
+    then:
+      decision: approval_required
+      approver: manager
+
+  - id: finance-approval
+    description: Expenses over $5,000 also need finance approval
+    when:
+      expense.amount:
+        gt: 5000
+    then:
+      decision: approval_required
+      approver: finance</code></pre>
+  <p>Running <code>tpt-policy explain</code> on a $6,200 claim prints:</p>
+<pre><code>decision: approval_required
+policy: expense@1.0.0
+approvers: manager, finance
+matched rules: manager-approval, finance-approval
+
+explanations:
+  manager-approval (approval_required): Expenses over $1,000 need manager approval
+  finance-approval (approval_required): Expenses over $5,000 also need finance approval</code></pre>
+  <p>The same decision can be written as a single HTML page with <code>--format html</code>, for a file or an email attachment.</p>
+</section>
+
+<section>
+  <h2>Features</h2>
+  <ul>
+    <li>Conditions on nested fields: equals, not equals, greater or less than, in a list, contains, exists, and AND, OR and NOT.</li>
+    <li>Clear errors. A broken rule file says what is wrong, where (the line), why, and how to fix it.</li>
+    <li>Inline tests in the rule file, run with one command, so you can check a change before it goes live.</li>
+    <li>Runs offline. No account, no keys, no phone-home. The privacy statement is in the documentation.</li>
+    <li>Stable exit codes, so a script or a build can act on the decision.</li>
+    <li>A local HTTP service, for systems that ask for decisions over the network. It listens on localhost by default, with an optional token.</li>
+    <li>A Docker image for running it in a container.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Platforms</h2>
+  <p>Windows x64 and Linux x64. Both are built and tested in development. A clean-machine install is not yet tested on either platform.</p>
+</section>
+
+<section id="buy">
+  <h2>Pricing</h2>
+  <p class="price"><span data-price>[price]</span>, one payment</p>
+  <p>One product, one price, one sale. No subscription, no seats, no activation key. The licence is MIT or Apache-2.0, so the source is open. What you pay for is the tested release, the documentation, and the examples.</p>
+  <p>Refunds: full refund within 14 days of purchase, no questions asked. <span class="note">[Wording to be reviewed before publishing.]</span></p>
+  <p><a class="btn" href="#">Buy on Gumroad</a> <span class="note">[Link to be added.]</span></p>
+</section>
+
+<section>
+  <h2>Documentation</h2>
+  <ul>
+    <li><a href="#">Install</a> and <a href="#">quick start</a></li>
+    <li><a href="#">Policy reference</a> and <a href="#">concepts</a></li>
+    <li><a href="#">CLI reference</a> and <a href="#">integration examples</a></li>
+    <li><a href="#">Troubleshooting</a></li>
+  </ul>
+  <p class="note">Links to be added once the documentation is published.</p>
+</section>
+
+<section>
+  <h2>FAQ</h2>
+  <p><strong>Does it send my data anywhere?</strong><br>No. It reads the files you give it and writes its output to your folder. It makes no network calls.</p>
+  <p><strong>Do I need a licence key?</strong><br>No. There is nothing to activate.</p>
+  <p><strong>What if a rule matches nothing?</strong><br>The policy's default decision applies. It is review unless you set another default, so a gap in the rules fails safe.</p>
+  <p><strong>Is this a compliance certification?</strong><br>No. It makes decisions from the rules you write. It does not certify that you comply with any law or standard.</p>
+  <p><strong>Can it replace my approval workflow system?</strong><br>No. It gives the decision and the approvers. It does not send emails, route tasks, or keep a queue.</p>
+</section>
+
+<footer>
+  <p>TPT Solutions. <span class="note">[Support contact to be added.]</span></p>
+</footer>
+
+</main>
+</body>
+</html>

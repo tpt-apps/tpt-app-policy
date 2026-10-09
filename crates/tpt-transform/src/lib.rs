@@ -9,10 +9,11 @@
 //! record, and is allowed only in the trim and case steps.
 
 use std::collections::BTreeSet;
+use std::path::Path;
 
 use serde::Deserialize;
 use serde_json::{Map, Number, Value};
-use tpt_data_core::Item;
+use tpt_data_core::{open, Format, Item};
 
 /// Version of this crate, recorded in summaries.
 pub const TRANSFORM_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -96,6 +97,95 @@ pub enum Step {
         #[serde(default)]
         decimals: Option<u32>,
     },
+    /// Copy values from a reference table into the record, matched on a key.
+    /// The table is read once, before the run, by [`PipelineFile::load_tables`].
+    Lookup {
+        /// Field in the record whose value is the key.
+        field: String,
+        /// Table file: .csv, .json or .jsonl. A relative path is taken from the
+        /// folder that holds the pipeline file.
+        table: String,
+        /// Column in the table that holds the key.
+        key: String,
+        /// Fields to set on the record: new field name → table column.
+        add: std::collections::BTreeMap<String, String>,
+        /// What to do when the key is missing or not in the table.
+        #[serde(default)]
+        on_missing: OnMissing,
+        /// The table, once loaded. Not part of the YAML.
+        #[serde(skip)]
+        loaded: Option<Table>,
+    },
+}
+
+/// What a `lookup` step does when its key has no match.
+#[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum OnMissing {
+    /// Leave the record as it is, and keep it.
+    #[default]
+    Skip,
+    /// Reject the record, with the reason.
+    Reject,
+}
+
+/// A reference table, keyed by the text of its key column.
+#[derive(Debug, Clone, Default)]
+pub struct Table {
+    rows: std::collections::HashMap<String, Map<String, Value>>,
+}
+
+impl Table {
+    /// Read a table file and index its rows by `key`. Keys must be unique.
+    pub fn load(path: &Path, key: &str) -> Result<Self, String> {
+        let format = Format::from_path(path)
+            .ok_or_else(|| format!("'{}' is not a .csv, .json or .jsonl table", path.display()))?;
+        let mut input = open(path, format).map_err(|e| e.to_string())?;
+        let mut rows = std::collections::HashMap::new();
+        for item in input.by_ref() {
+            match item {
+                Item::Row(row) => {
+                    let Value::Object(record) = row.record else {
+                        continue;
+                    };
+                    let Some(value) = get_path(&record, key).and_then(key_text) else {
+                        return Err(format!(
+                            "table row {} has no '{key}' value, so it cannot be looked up",
+                            row.number
+                        ));
+                    };
+                    if rows.contains_key(&value) {
+                        return Err(format!(
+                            "key '{value}' appears more than once in '{}' (row {}); a lookup table needs unique keys",
+                            path.display(),
+                            row.number
+                        ));
+                    }
+                    rows.insert(value, record);
+                }
+                Item::Malformed { number, message } => {
+                    return Err(format!("table row {number}: {message}"));
+                }
+            }
+        }
+        // A table that breaks off part-way would be partly loaded, so it is an error.
+        if let Some(e) = input.failure() {
+            return Err(e.to_string());
+        }
+        Ok(Self { rows })
+    }
+}
+
+/// The text of a key value. Empty text and null are not keys.
+fn key_text(value: &Value) -> Option<String> {
+    match value {
+        Value::String(text) => {
+            let text = text.trim();
+            (!text.is_empty()).then(|| text.to_string())
+        }
+        Value::Number(number) => Some(number.to_string()),
+        _ => None,
+    }
 }
 
 /// The arithmetic in a `calculate` step.
@@ -251,6 +341,31 @@ fn validate(file: &PipelineFile) -> Result<(), String> {
                     return fail("'decimals' must be 10 or less");
                 }
             }
+            Step::Lookup {
+                field,
+                table,
+                key,
+                add,
+                ..
+            } => {
+                if field.trim().is_empty() || key.trim().is_empty() {
+                    return fail("'field' and 'key' must be set");
+                }
+                if table.trim().is_empty() {
+                    return fail(
+                        "'table' is empty; give the path to a .csv, .json or .jsonl table",
+                    );
+                }
+                if add.is_empty() {
+                    return fail("'add' is empty; list at least one field to copy from the table");
+                }
+                if add
+                    .iter()
+                    .any(|(new, column)| new.trim().is_empty() || column.trim().is_empty())
+                {
+                    return fail("field names in 'add' cannot be empty");
+                }
+            }
         }
     }
     Ok(())
@@ -314,11 +429,29 @@ impl Step {
             Self::Map { .. } => "map",
             Self::Filter(_) => "filter",
             Self::Calculate { .. } => "calculate",
+            Self::Lookup { .. } => "lookup",
         }
     }
 }
 
 impl PipelineFile {
+    /// Read the table of every `lookup` step. A relative table path is taken
+    /// from `base`, the folder that holds the pipeline file. Errors name the step.
+    pub fn load_tables(&mut self, base: &Path) -> Result<(), String> {
+        for (index, step) in self.pipeline.iter_mut().enumerate() {
+            if let Step::Lookup {
+                table, key, loaded, ..
+            } = step
+            {
+                let path = base.join(table);
+                let data = Table::load(&path, key)
+                    .map_err(|why| format!("step {} (lookup): {why}", index + 1))?;
+                *loaded = Some(data);
+            }
+        }
+        Ok(())
+    }
+
     /// Run every step over one record. `Err` carries the step and the reason.
     pub fn apply(&self, record: &Value) -> Result<Outcome, String> {
         let mut current = record.clone();
@@ -544,6 +677,36 @@ impl Step {
                 let result = calculate(*operation, &operands)?;
                 let value = number_value(result, *decimals)?;
                 put_path(root, into, value);
+            }
+            Self::Lookup {
+                field,
+                table,
+                add,
+                on_missing,
+                loaded,
+                ..
+            } => {
+                let Some(table_data) = loaded else {
+                    return Err(format!("the table '{table}' has not been loaded"));
+                };
+                let key = get_path(root, field).and_then(key_text);
+                match key.as_ref().and_then(|k| table_data.rows.get(k)) {
+                    Some(row) => {
+                        for (new_field, column) in add {
+                            let value = get_path(row, column).cloned().unwrap_or(Value::Null);
+                            put_path(root, new_field, value);
+                        }
+                    }
+                    None => match on_missing {
+                        OnMissing::Skip => {}
+                        OnMissing::Reject => {
+                            return Err(match key {
+                                None => format!("'{field}' is empty, so it cannot be looked up"),
+                                Some(k) => format!("'{k}' is not in the table '{table}'"),
+                            });
+                        }
+                    },
+                }
             }
         }
         Ok(true)

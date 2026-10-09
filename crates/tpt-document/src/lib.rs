@@ -28,12 +28,15 @@ use tpt_schema::{check_record, typed_record, FieldError, Mode, Schema};
 
 pub mod xml;
 
-/// The document formats this crate reads.
+/// The document formats this crate reads. `Csv` is not read from a file here:
+/// a caller that reads CSV rows builds the record itself and uses this for
+/// the schema mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DocFormat {
     Json,
     Xml,
+    Csv,
 }
 
 impl DocFormat {
@@ -42,14 +45,15 @@ impl DocFormat {
         match self {
             Self::Json => "json",
             Self::Xml => "xml",
+            Self::Csv => "csv",
         }
     }
 
-    /// JSON values keep their types. XML values are all text.
+    /// JSON values keep their types. XML and CSV values are all text.
     pub fn mode(self) -> Mode {
         match self {
             Self::Json => Mode::Strict,
-            Self::Xml => Mode::Text,
+            Self::Xml | Self::Csv => Mode::Text,
         }
     }
 
@@ -165,6 +169,13 @@ pub fn read_document(path: &Path) -> Result<Parsed, DocError> {
         fix: "check the path is right and the file is readable".to_string(),
     })?;
     Ok(match format {
+        // `from_path` never returns CSV, so this only guards the match.
+        DocFormat::Csv => Parsed::Malformed {
+            format,
+            message:
+                "CSV is not a document format here. Read CSV rows with the product that uses them"
+                    .to_string(),
+        },
         DocFormat::Xml => match xml::xml_to_value(&text) {
             Ok(value) => Parsed::Ok { format, value },
             Err(e) => Parsed::Malformed {

@@ -88,6 +88,8 @@ enum Command {
 enum Format {
     Json,
     Text,
+    /// A single HTML page for people to read and file
+    Html,
 }
 
 fn main() -> ExitCode {
@@ -96,7 +98,7 @@ fn main() -> ExitCode {
             Ok(p) => {
                 if !quiet {
                     println!(
-                        "valid: {} (version {}, {} rules, {} tests)",
+                        "valid: {}@{} ({} rules, {} tests)",
                         p.name,
                         p.version,
                         p.rules.len(),
@@ -233,6 +235,7 @@ fn decide(
     let text = match format {
         Format::Json => format!("{}\n", tpt_report::json(&evaluation)),
         Format::Text => tpt_report::terminal(&evaluation, explain),
+        Format::Html => tpt_report::evaluation_html(&evaluation),
     };
     if let Some(path) = output {
         if let Err(e) = fs::write(path, text) {

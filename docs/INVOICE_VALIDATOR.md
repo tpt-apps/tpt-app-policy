@@ -62,7 +62,8 @@ the full result.
 ## Input
 
 An invoice is a JSON object or an XML document, as for
-[DOCUMENT_VALIDATOR.md](DOCUMENT_VALIDATOR.md). Each invoice needs these fields:
+[DOCUMENT_VALIDATOR.md](DOCUMENT_VALIDATOR.md), or a set of rows in a CSV file
+(see [Invoices in CSV](#invoices-in-csv)). Each invoice needs these fields:
 
 | Field | Type | Used by |
 |---|---|---|
@@ -91,6 +92,50 @@ Wrap the lines in `<lines>`, with one `<line>` per item:
 
 The wrapper is needed. A single `<line>` inside `<lines>` is read correctly, and
 so are several.
+
+### Invoices in CSV
+
+A CSV file holds many invoices, and each row is one line of an invoice. Rows
+with the same `supplier.tax_id` and `invoice_number` form one invoice, wherever
+they are in the file. Invoice fields are dotted column names, as in a schema.
+Columns named `line.<field>` hold the line item for that row:
+
+```csv
+invoice_number,issue_date,supplier.name,supplier.tax_id,currency,subtotal,tax_rate,tax,total,line.description,line.quantity,line.unit_price,line.amount
+INV-2001,2026-03-02,Harbour Supplies Ltd,123-456-789,NZD,500.00,0.15,75.00,575.00,Office chair,2,200.00,400.00
+INV-2001,2026-03-02,Harbour Supplies Ltd,123-456-789,NZD,500.00,0.15,75.00,575.00,Desk lamp,1,100.00,100.00
+```
+
+The invoice fields must be the same on every row of an invoice. If they differ,
+the invoice is REJECT and the message names the field. A row that cannot be read
+is REJECT on its own. A row with no `invoice_number` or `supplier.tax_id` cannot
+be grouped, so it is checked as an invoice on its own, and the schema reports
+the missing fields.
+
+Each invoice in a CSV file gets its own result file, named for the first row of
+the invoice. For example, `batch.row-1.result.json` holds an invoice that starts
+on row 1. The console report names it as `batch.csv row 1`. An example is in
+`examples/invoices/batch.csv`.
+
+## Serving over HTTP
+
+`tpt-invoice serve` checks one invoice per request, for a system that sends
+invoices as they arrive:
+
+```
+tpt-invoice serve --schema invoice.schema.yaml --policy invoice.policy.yaml \
+  --suppliers suppliers.json --ledger ledger.jsonl --listen 127.0.0.1:8080
+```
+
+- `POST /v1/validate` takes one invoice as a JSON object and returns the result,
+  the same content as a result file. A rejected invoice is still a `200`, with
+  `"verdict": "REJECT"`. Only a request that is not an invoice gets a `4xx`.
+- `GET /healthz` returns `{"status": "ok"}`.
+- Requests are handled one at a time. The ledger is shared by all requests, so
+  two invoices with the same key cannot both be accepted.
+- Set `TPT_INVOICE_TOKEN` to require `Authorization: Bearer <token>` on
+  `POST /v1/validate`. The server listens on localhost by default. Without a
+  token, it warns when the address is not localhost.
 
 ## The supplier list
 
@@ -180,4 +225,6 @@ Sample invoices are in `examples/invoices/`:
 - Tax is checked against one rate per invoice. Mixed-rate invoices need the rate
   to be pre-computed, so the tax field is checked as a total.
 - Currency conversion is not checked. The policy can flag foreign currency for review.
-- The HTML report and the Docker image are not built yet.
+- The HTML report is not built yet.
+- The HTTP server handles one request at a time, and has no TLS. Put it behind a
+  proxy that provides TLS if it has to leave localhost.

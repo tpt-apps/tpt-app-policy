@@ -45,7 +45,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ### tpt-policy-core (§7, §34, §35) — done
 - [x] Rule AST (`src/model.rs`)
-- [x] YAML parser with validation (`src/parse.rs`). Syntax errors give line and column. Semantic errors give the key path (e.g. `rules[0].when.amount.greater_than`), not a line number. Line numbers for semantic errors are a possible follow-up.
+- [x] YAML parser with validation (`src/parse.rs`). Syntax errors give line and column. Semantic errors give the key path and the line (e.g. `rules[0].when.amount.greater_than (line 6)`). The line is found by `src/locate.rs`, which follows block YAML. Flow-style values fall back to the nearest key.
 - [x] Policy metadata: `policy`, `version` (optional, recorded as `unversioned` when missing), rule `id`, `description`
 - [x] Field-path resolution (nested objects, list indexes)
 - [x] Operators: equality, inequality, gt/gte/lt/lte, string compare, list membership, existence, contains
@@ -54,7 +54,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Decision model + severity precedence merge
 - [x] Merged outputs: approvers, requirements, warnings (`requirement` and `warning` on a rule; `approver` as text or `{role: ...}`)
 - [x] Explanation model: matched rules with descriptions, failed rules with the first failed check
-- [~] Policy versioning: version is recorded in every output. **Not done:** `name@x.y.z` form, and checking it against the app version (§37)
+- [~] Policy versioning: version is recorded in every output, validated as numeric `MAJOR[.MINOR[.PATCH]]`, and shown as `name@version`. Tests in `crates/tpt-policy-core/tests/versioning.rs`. **Not done:** checking the policy version against the app version (§37). The spec gives no rule for it (no compatibility range or engine-version field in the policy format), so it needs a decision first
 - [x] Determinism: no clock or randomness in evaluation; repeated runs are tested to be byte-identical
 - [x] Validation errors with what / where / why / fix (§29.4)
 - [x] Inline `tests:` block (name / input / expect), with optional `matched_rules` (§36)
@@ -67,13 +67,13 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [~] Common report model (status, timestamp, product, version, input, summary, errors). **Partly done:** the reporters take `Evaluation` from `tpt-policy-core`. No separate report model yet, and the JSON output has no product or timestamp fields by design.
 - [x] JSON reporter
 - [x] Terminal reporter. Moved from the binary into `tpt-report::terminal`.
-- [ ] HTML reporter (can wait until Phase 3)
+- [x] HTML reporter for one decision: `tpt-policy check --format html` (`crates/tpt-report/src/evaluation.rs`). Checked in headless Edge.
 
 ### tpt-commercial-cli (§18, §19, §38)
 - [~] Common flags. **Done:** `--format` on `check` and `explain`, `--version`, `--output FILE` on `check`/`explain`/`run`, `--quiet` on `validate`/`test`. **Missing:** `--config --policy --schema --json --verbose` (`--config` and `--schema` wait on their designs; `--json` and `--verbose` are not needed by any current command).
 - [ ] `--debug`, `--json-logs`; logs never dump customer records by default. **Not started.** Current output contains no logs.
 - [ ] Config discovery (`./tpt/config|policies|schemas|templates|reports`), no hidden DB. **Not started.**
-- [ ] Diagnostics formatter. **Partly done:** `PolicyError` renders what / where / why / fix; not yet shared across products
+- [~] Diagnostics formatter. **Partly done:** `PolicyError` renders what / where / why / fix; not yet shared across products. **Not doing:** a shared formatter would make `tpt-policy-core` depend on this CLI crate, which reverses the layering, for a format string of about six lines in each product.
 - [x] Stable, documented exit codes (`crates/tpt-commercial-cli/src/lib.rs`, table in README.md)
 
 ### tpt-app-policy binary `tpt-policy` (§8, §47–48)
@@ -101,7 +101,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [~] Integrate tpt-wasm (WASM sandbox). **Checked:** tpt-wasm is MIT OR Apache-2.0. Its only third-party dependency is `wast` (Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT), used only by `tpt-wasm-spec`, a spec test harness. So a product that does not depend on `tpt-wasm-spec` picks up no third-party licence issue. Re-run `cargo deny` on the final dependency tree before embedding.
 - [~] Resource limits (time, memory, input size). **Done:** input size: 10 MB in the CLI, 1 MB over HTTP. **Not needed yet:** time limits, since evaluation is linear in rules and input size and has no loops or I/O. Memory follows from the input size limit.
 - [x] Deterministic mode (always on: no clock, no randomness; tested byte-identical across runs)
-- [ ] Expose policy evaluation as an embeddable WASM module (§8.4)
+- [x] Expose policy evaluation as an embeddable WASM module (§8.4). `crates/tpt-policy-wasm`: plain C ABI, no imports, same JSON as `check`. Built for wasm32 (about 470 KB, not size-optimised). Tested with `node crates/tpt-policy-wasm/js/smoke.mjs`, which compares the expense example with the CLI's golden output.
 - [x] REST: `tpt-policy serve`, `POST /v1/evaluate` (plus `GET /healthz`). Localhost by default, optional bearer token, 1 MB body limit. Tested over real sockets. Single-threaded.
 - [x] `doctor` subcommand: runtime, config, permissions, install, version, optional deps (§29.5). Checks version, platform, working-directory write test, `./tpt` layout (§19, optional), and a built-in self-test. Optional-dependency checks are not needed yet, since no optional dependencies exist.
 - [ ] Signed policy bundles / release checksums via tpt-crypto (optional signatures)
@@ -130,8 +130,8 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Licence (§26) replaced by dual MIT OR Apache-2.0. A separate commercial licence is no longer planned; the paid offer is the Gumroad product (see `docs/GUMROAD.md`).
 - [x] Support-boundary statement (§43) — `docs/SUPPORT.md` ("What support covers")
 - [x] Privacy statement: no data leaves the machine (§39) — `docs/PRIVACY.md`, verified by checking that no outbound HTTP client crate is in the dependency tree
-- [ ] Landing page (§31)
-- [ ] Gumroad listing: one product, $49 suggested (§27). Full setup in `docs/GUMROAD.md`. Still to do: set the price in Gumroad, the refund wording, and the checklist there.
+- [~] Landing page (§31). **Draft only, not published:** `docs/site/app-policy.html` for TPT App Policy, in the spec's section order, with placeholders for price, buy link, docs links and support contact. Checked at a 390px viewport. The other nine products have no page yet.
+- [ ] Gumroad listing: one product, $49 suggested (§27). Full setup in `docs/GUMROAD.md`. The refund wording is already written (`docs/GUMROAD.md` §7), and the landing page draft uses it. Still needs you: set the price and refund window in Gumroad, have the wording reviewed by an adviser (the doc's own checklist item), and tick the checklist there.
 - [x] Policy templates/examples (purchase order, expense, etc.). `examples/templates/purchase-order.policy.yaml` (with inline tests, passing), plus `examples/expense/`, `examples/purchasing/`, `examples/invoices/` and `examples/approval/`.
 
 ### 1.0 acceptance criteria (§47) — do not ship until all pass
@@ -157,7 +157,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 ## Phase 3 — Data Platform → TPT Data Validator
 
 - [x] `tpt-schema` full: schema definition (YAML), types, required, enums, patterns, uniqueness. Note: §34 lists `tpt-schema` as a new shared repo. It does not exist on GitHub yet; it lives in this workspace.
-- [~] `tpt-data-core`: record abstraction, CSV, JSON, JSON Lines, streaming. **Done:** CSV and JSON Lines stream one record at a time. **Not streamed:** a JSON array is read in full. Use JSON Lines for big files.
+- [x] `tpt-data-core`: record abstraction, CSV, JSON, JSON Lines, streaming. CSV, JSON Lines and JSON arrays all stream one record at a time. A JSON array that breaks off part-way stops the run with exit 3; outputs written before that are partial (documented).
 - [x] Validation engine using policy core + schema. Schema first, then duplicates, then the policy on valid records only (typed values, so `gt` works on CSV text).
 - [x] Outputs: validated data, invalid records, error report, summary report
 - [x] Row-level error messages (row, field, reason) as in §9.2
@@ -177,14 +177,14 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] CLI `tpt-document`; `doctor`; Docker image `tpt/document` (`Dockerfile.document`). **Done:** `validate` (several files, exit code = worst verdict, `--out` for per-document JSON), `doctor`, and Docker tested on Windows (Docker Desktop).
 - [~] Docs, examples, landing page, Gumroad listing. **Done:** `docs/DOCUMENT_VALIDATOR.md`, examples. **Missing:** landing page, Gumroad listing.
 - [~] Windows + Linux release bundle. `scripts/package.sh document` builds it. **Done:** Windows (Git Bash). **Done:** Linux (container). **Missing:** a clean-machine Linux install.
-- [x] HTML report for documents. `tpt-document validate --html --out DIR` writes `report.html`: verdict counts, a document table, and each document's schema errors and policy rules. Same page rules as the data report (no scripts, escaped values, light and dark themes). Checked with a headless Edge screenshot (light theme). Dark theme not yet looked at.
+- [x] HTML report for documents. `tpt-document validate --html --out DIR` writes `report.html`: verdict counts, a document table, and each document's schema errors and policy rules. Same page rules as the data report (no scripts, escaped values, light and dark themes). Checked with headless Edge: light theme, and dark theme (forced, since the flag for system dark mode had no effect in headless Edge).
 - [ ] Tag **Document Validator 1.0**
 
 ## Phase 5 — Vertical → TPT Invoice Validator
 
 - [x] Pipeline: schema → line items → subtotal → tax → total → supplier → duplicate detection → business policy (§11.2). Schema first; a failure stops the run.
 - [x] PASS / REVIEW / REJECT. Any failed check in steps 1 to 7 is REJECT; the policy's `review` and `approval_required` give REVIEW.
-- [~] Inputs: JSON, CSV, XML; REST; import/export files. **Done:** JSON and XML. **Missing:** CSV (invoices are one document each, so CSV needs a row-to-invoice mapping decision), REST (the `tpt-policy serve` pattern can be reused).
+- [x] Inputs: JSON, CSV, XML; REST; import/export files. CSV: rows with the same supplier tax ID and invoice number form one invoice, and `line.*` columns are its line items (`docs/INVOICE_VALIDATOR.md`). REST: `tpt-invoice serve`, `POST /v1/validate`, tested over real sockets.
 - [x] Duplicate detection without a database. Design: a JSON-lines ledger of `supplier tax ID|invoice number`. Accepted invoices are added at once. Documented in `docs/INVOICE_VALIDATOR.md`, including the limit that two concurrent runs can miss a duplicate.
 - [x] Invoice rule/policy templates (`examples/invoices/invoice.policy.yaml`, `invoice.schema.yaml`)
 - [x] CLI `tpt-invoice`; `doctor`; Docker image `tpt/invoice` (`Dockerfile.invoice`). **Done:** `validate` (with `--suppliers`, `--ledger`, `--policy`, `--out`), `doctor`, and Docker tested on Windows (Docker Desktop), including the duplicate ledger persisting across containers.
@@ -199,7 +199,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] CLI `tpt-transform` with `run`, `check` and `doctor`
 - [~] Docs, examples, landing page, Gumroad listing, bundle. **Done:** `docs/DATA_TRANSFORMER.md`, `examples/transform/` with golden output, `scripts/package.sh transform`. **Missing:** landing page, Gumroad listing. Bundle built and unpacked on Windows, and on Linux in a container.
 - [ ] Tag **Data Transformer 1.0**
-- [ ] (Later) joins, lookups, reference tables, large-file streaming
+- [~] (Later) joins, lookups, reference tables, large-file streaming. **Done:** `lookup` step against a reference table (CSV, JSON or JSON Lines), with skip or reject on a missing key. **Not done:** joins between two inputs; streaming. Streaming needs a decision first: CSV output columns depend on every kept record, so a streamed CSV would need a fixed column order.
 
 ## Phase 7 — Approval → TPT Approval Engine
 
@@ -243,10 +243,10 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ## Portfolio extra — TPT Rules SDK (§17)
 
-- [ ] Rust crate API (stabilise from policy-core)
-- [ ] WASM interface
-- [ ] Examples, schema definitions, policy compiler, integration guide, test utilities
-- [ ] Defer Python / Node.js / .NET until demand is evidenced
+- [~] Rust crate API (stabilise from policy-core). **Done:** the public items and their stability are listed in `docs/RULES_SDK.md`, and `examples/embed.rs` is built by `cargo test`. **Not done:** a formal semver policy.
+- [x] WASM interface: `crates/tpt-policy-wasm` (see Phase 2)
+- [~] Examples, schema definitions, policy compiler, integration guide, test utilities. **Done:** `examples/embed.rs`, `docs/RULES_SDK.md` (integration guide), `run_tests` as the test utility. Schema definitions are in `tpt-schema`. **Not done:** a separate policy compiler. `parse_policy` already checks and compiles a policy.
+- [x] Defer Python / Node.js / .NET until demand is evidenced (the WASM module is the route to them; the Node smoke test is the only host tested)
 
 ## Cross-cutting (repeat per product)
 
@@ -254,7 +254,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [ ] Stable exit codes documented
 - [ ] Report includes product + policy + schema versions
 - [ ] Logs avoid customer data by default
-- [ ] No cloud calls; works offline
+- [x] No cloud calls; works offline (checked: the normal dependency tree of the whole workspace has no HTTP client or TLS crate; `tiny_http` is a listener only)
 - [ ] Semantic versioning, CHANGELOG entry, checksums, release notes
 - [ ] Windows x64 + Linux x64 artefacts
 - [ ] Docs set from §30 complete

@@ -8,7 +8,7 @@ tests.
 | Key | Required | Meaning |
 |---|---|---|
 | `policy` | Yes | Policy name. Appears in every output. |
-| `version` | No | Policy version, such as `"1.0.0"`. Recorded in output. Defaults to `unversioned`. |
+| `version` | No | Policy version: `MAJOR`, `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`, numbers only, such as `"2.1.0"`. Recorded in output, and shown as `name@version` (e.g. `purchasing@2.1.0`). Quote it: an unquoted `1.10` is read as a number. Defaults to `unversioned`. |
 | `default_decision` | No | Decision when no rule matches. Defaults to `review`. |
 | `rules` | Yes | List of rules, checked in file order. |
 | `tests` | No | Inline test cases. See [Tests](#tests). |
@@ -172,8 +172,10 @@ See [examples/purchasing/](../examples/purchasing/) for a full set.
   column for YAML syntax errors.
 - **why** and **fix**: what to change.
 
-Semantic errors give a key path, not a line number. Line numbers for semantic
-errors are a planned improvement.
+Semantic errors give a key path and, where the file has the key in block style,
+the line: `rules[0].when.amount.greater_than (line 6)`. The line is the one that
+holds the key, or the list item. If the path cannot be followed in the file, for
+example inside a flow-style `{...}` value, the line of the nearest key is given.
 
 Example, from [examples/invalid/](../examples/invalid/):
 

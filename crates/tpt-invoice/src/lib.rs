@@ -29,6 +29,10 @@ use tpt_document::Parsed;
 use tpt_policy_core::{evaluate, Decision, Evaluation, Policy};
 use tpt_schema::{check_record, lookup, typed_record, FieldError, Mode, Schema};
 
+pub mod intake;
+
+pub use intake::{read_invoices, Invoice};
+
 /// Largest difference allowed between two money amounts that should agree.
 pub const CENT: f64 = 0.01;
 

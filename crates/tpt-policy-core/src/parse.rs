@@ -9,6 +9,7 @@ use serde_json::Value as Json;
 use serde_yaml::{Mapping, Value as Yaml};
 
 use crate::error::PolicyError;
+use crate::locate;
 use crate::model::{Check, Condition, Decision, Expectation, Op, Outcome, Policy, Rule, TestCase};
 
 const POLICY_KEYS: &[&str] = &["policy", "version", "default_decision", "rules", "tests"];
@@ -31,6 +32,15 @@ pub fn parse_policy(source: &str) -> Result<Policy, PolicyError> {
             "fix the syntax at the location shown; indent with spaces, not tabs",
         )
     })?;
+    parse_document(&doc).map_err(|mut e| {
+        e.line = locate::line_of(source, &e.location);
+        e
+    })
+}
+
+/// Validate the parsed YAML. Errors carry a key path, which
+/// [`parse_policy`] turns into a line number.
+fn parse_document(doc: &Yaml) -> Result<Policy, PolicyError> {
     if doc.is_null() {
         return Err(PolicyError::new(
             "empty policy",
@@ -40,13 +50,25 @@ pub fn parse_policy(source: &str) -> Result<Policy, PolicyError> {
         ));
     }
 
-    let root = as_map(&doc, "<root>")?;
+    let root = as_map(doc, "<root>")?;
     check_keys(root, POLICY_KEYS, "<root>")?;
 
     let name = req_text(root, "policy", "<root>")?;
     let version = match get(root, "version") {
         None => "unversioned".to_string(),
-        Some(v) => string_of(v, "version")?,
+        Some(Yaml::Number(n)) if n.is_f64() => {
+            return Err(PolicyError::new(
+                "unquoted decimal version",
+                "version",
+                "YAML reads 1.10 as the number 1.1, so the version would be recorded wrongly",
+                "quote the version, e.g. version: \"1.10\"",
+            ));
+        }
+        Some(v) => {
+            let text = string_of(v, "version")?;
+            check_version(&text)?;
+            text
+        }
     };
     let default_decision = match get(root, "default_decision") {
         None => Decision::Review,
@@ -406,6 +428,25 @@ fn opt_string(map: &Mapping, key: &str, loc: &str) -> Result<Option<String>, Pol
     get(map, key)
         .map(|v| string_of(v, &format!("{loc}.{key}")))
         .transpose()
+}
+
+/// A policy version is `MAJOR`, `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`, with
+/// numeric parts only, e.g. `1`, `2.1` or `2.1.0`.
+fn check_version(text: &str) -> Result<(), PolicyError> {
+    let parts: Vec<&str> = text.split('.').collect();
+    let valid = (1..=3).contains(&parts.len())
+        && parts
+            .iter()
+            .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()));
+    if valid {
+        return Ok(());
+    }
+    Err(PolicyError::new(
+        "invalid version",
+        "version",
+        format!("'{text}' is not a version number"),
+        "use MAJOR.MINOR.PATCH with numbers only, e.g. version: \"2.1.0\", or leave version out",
+    ))
 }
 
 fn string_of(value: &Yaml, loc: &str) -> Result<String, PolicyError> {

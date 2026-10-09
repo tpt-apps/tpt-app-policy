@@ -50,7 +50,7 @@ when everything passes.
 |---|---|---|
 | CSV | One record at a time | First line is the column names. Header names are trimmed. Empty cells are missing. |
 | JSON Lines (`.jsonl`) | One record at a time | One JSON object per line. Blank lines are skipped. |
-| JSON (`.json`) | The whole file is read into memory | Must be an array of objects. Use JSON Lines for files too large to fit in memory. |
+| JSON (`.json`) | One record at a time | Must be an array of objects. Each record is read on its own, so the whole file is not held in memory. |
 
 Records are numbered from 1. For CSV, the header is not counted. Blank lines in
 JSON Lines are not counted.
@@ -124,7 +124,7 @@ Nothing is sent over the network.
 ## Limits in this version
 
 - Input is CSV, JSON or JSON Lines. XML is not supported yet.
-- The HTML report is not built yet. The text report and `summary.json` are.
-- The JSON array format loads the whole file. Use JSON Lines for large files.
+- The HTML report is written only when `--html` is given. The text report and `summary.json` are always written.
+- A JSON array that breaks off part-way (a file that ends early, or text after the closing `]`) stops the run with exit `3`. The records before that point are already written to the outputs, so those outputs are partial. The summary is not written.
 - Only the `unique` schema rule works across records.
 - A policy is one file, and it is evaluated per record. Policies that need several records at once are not supported.

@@ -325,7 +325,7 @@ fn group(n: u64) -> String {
     out
 }
 
-const CSS: &str = "\
+pub(crate) const CSS: &str = "\
 :root{--fg:#1d2330;--muted:#5b6475;--bg:#f7f8fa;--card:#ffffff;--line:#d9dde5;\
 --ok:#1e7a46;--ok-bg:#e7f5ec;--warn:#8a5a00;--warn-bg:#fff4dc;--bad:#a12626;--bad-bg:#fbeaea;--code:#eef1f5}\
 @media (prefers-color-scheme: dark){:root:not([data-theme=\"light\"]){\

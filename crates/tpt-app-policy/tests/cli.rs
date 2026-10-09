@@ -162,3 +162,28 @@ fn bad_input_json_exits_3() {
 
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn check_with_html_format_writes_one_self_contained_page() {
+    let dir = std::env::temp_dir().join(format!("tpt-policy-html-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let target = dir.join("decision.html");
+    let output = Command::new(env!("CARGO_BIN_EXE_tpt-policy"))
+        .args([
+            "check",
+            &example("expense/expense.yaml"),
+            &example("expense/expense.json"),
+            "--format",
+            "html",
+            "--output",
+        ])
+        .arg(&target)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(10), "approval_required exits 10");
+    let page = std::fs::read_to_string(&target).unwrap();
+    assert!(page.starts_with("<!doctype html>"));
+    assert!(page.contains("approval_required"));
+    assert!(!page.contains("<script"));
+    assert!(!page.contains("http://") && !page.contains("https://"));
+}

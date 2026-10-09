@@ -15,6 +15,9 @@ pub struct PolicyError {
     pub why: String,
     /// How to fix it.
     pub fix: String,
+    /// The line in the policy file, 1-based, where the problem is. `None` when
+    /// the error is about the whole file, or the line cannot be found.
+    pub line: Option<usize>,
 }
 
 impl PolicyError {
@@ -29,16 +32,22 @@ impl PolicyError {
             location: location.into(),
             why: why.into(),
             fix: fix.into(),
+            line: None,
         }
     }
 }
 
 impl fmt::Display for PolicyError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // The key path, then the line when it is known.
+        let place = match self.line {
+            Some(n) => format!("{} (line {n})", self.location),
+            None => self.location.clone(),
+        };
         write!(
             f,
             "error: {} at {}\n  why: {}\n  fix: {}",
-            self.what, self.location, self.why, self.fix
+            self.what, place, self.why, self.fix
         )
     }
 }

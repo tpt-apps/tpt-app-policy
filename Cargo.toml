@@ -14,6 +14,7 @@ members = [
     "crates/tpt-approve",
     "crates/tpt-evidence",
     "crates/tpt-ai-guard",
+    "crates/tpt-policy-wasm",
 ]
 
 [workspace.package]

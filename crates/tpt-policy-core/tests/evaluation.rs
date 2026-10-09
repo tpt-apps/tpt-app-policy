@@ -439,3 +439,17 @@ fn error_display_has_what_where_why_fix() {
     assert!(text.contains("\n  why: "));
     assert!(text.contains("\n  fix: "));
 }
+
+#[test]
+fn semantic_errors_give_the_line_of_the_problem() {
+    let policy = "policy: t\nrules:\n  - id: a\n    when:\n      amount:\n        greater_than: 5\n    then:\n      decision: approved\n";
+    let e = parse_policy(policy).expect_err("unknown operator");
+    assert_eq!(e.what, "unknown operator");
+    assert_eq!(e.location, "rules[0].when.amount.greater_than");
+    assert_eq!(e.line, Some(6));
+    assert!(
+        e.to_string()
+            .contains("rules[0].when.amount.greater_than (line 6)"),
+        "{e}"
+    );
+}

@@ -535,8 +535,10 @@ name = "tpt-invoice"
 version = "2026.1.0"
 dependencies = [
  "clap",
+ "csv",
  "serde",
  "serde_json",
+ "tiny_http",
  "tpt-document",
  "tpt-policy-core",
  "tpt-schema",
@@ -550,6 +552,15 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sha2",
+]
+
+[[package]]
+name = "tpt-policy-wasm"
+version = "2026.1.0"
+dependencies = [
+ "serde_json",
+ "tpt-policy-core",
+ "tpt-report",
 ]
 
 [[package]]
