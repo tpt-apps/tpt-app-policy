@@ -106,7 +106,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Docker image (`tpt/app-policy`) (§25). Built and tested on Docker Desktop (Windows): `doctor`, `check` (matches the golden output), `serve` with healthz and bearer auth, non-root user. Image is 117 MB. Linux and macOS not yet tested.
 - [x] Release bundle layout (§23). `scripts/package.sh` builds it, with checksums. Tested on Windows (Git Bash) and Linux (in a rust:1-bookworm container). macOS not yet tested. It refuses to package without `LICENSE-MIT` and `LICENSE-APACHE`.
 - [ ] Windows x64 build + install test on a clean machine
-- [~] Linux x64 build + install test. **Done:** fmt, clippy, all 123 tests, and the four bundles built and unpacked in a `rust:1-bookworm` container, with `--version` and `doctor` run from each bundle. **Not done:** a clean machine, with no Rust toolchain installed.
+- [~] Linux x64 build + install test. **Done:** fmt, clippy, all 126 tests, and the four bundles built and unpacked in a `rust:1-bookworm` container, with `--version` and `doctor` run from each bundle. **Not done:** a clean machine, with no Rust toolchain installed.
 - [~] Checksums + release notes for each version (§40). **Done:** `SHA256SUMS` from the packaging script, and `CHANGELOG.md`. **Missing:** signatures (optional in §40)
 
 ### Docs for 1.0 (§30)
