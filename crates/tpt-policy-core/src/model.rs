@@ -51,6 +51,8 @@ pub struct Policy {
     pub name: String,
     /// Recorded in every evaluation. `unversioned` when the file omits it.
     pub version: String,
+    /// Policy file format. `1` when the file omits it. See [`crate::POLICY_FORMAT`].
+    pub format: u32,
     /// Decision when no rule matches. Defaults to `review` (fails safe).
     pub default_decision: Decision,
     pub rules: Vec<Rule>,

@@ -9,6 +9,7 @@ tests.
 |---|---|---|
 | `policy` | Yes | Policy name. Appears in every output. |
 | `version` | No | Policy version: `MAJOR`, `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`, numbers only, such as `"2.1.0"`. Recorded in output, and shown as `name@version` (e.g. `purchasing@2.1.0`). Quote it: an unquoted `1.10` is read as a number. Defaults to `unversioned`. |
+| `format` | No | Policy file format, a whole number. Defaults to `1`, the only format this engine reads. A higher number is refused with an error that says to upgrade the engine, so an old engine never guesses at rules it does not understand. The app version does not change this number. Breaking changes to the policy language bump it. |
 | `default_decision` | No | Decision when no rule matches. Defaults to `review`. |
 | `rules` | Yes | List of rules, checked in file order. |
 | `tests` | No | Inline test cases. See [Tests](#tests). |

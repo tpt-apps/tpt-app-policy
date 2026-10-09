@@ -12,7 +12,14 @@ use crate::error::PolicyError;
 use crate::locate;
 use crate::model::{Check, Condition, Decision, Expectation, Op, Outcome, Policy, Rule, TestCase};
 
-const POLICY_KEYS: &[&str] = &["policy", "version", "default_decision", "rules", "tests"];
+const POLICY_KEYS: &[&str] = &[
+    "policy",
+    "version",
+    "format",
+    "default_decision",
+    "rules",
+    "tests",
+];
 const RULE_KEYS: &[&str] = &["id", "description", "when", "then"];
 const OUTCOME_KEYS: &[&str] = &["decision", "approver", "requirement", "warning"];
 const TEST_KEYS: &[&str] = &["name", "input", "expect"];
@@ -70,6 +77,10 @@ fn parse_document(doc: &Yaml) -> Result<Policy, PolicyError> {
             text
         }
     };
+    let format = match get(root, "format") {
+        None => crate::POLICY_FORMAT,
+        Some(v) => check_format(v)?,
+    };
     let default_decision = match get(root, "default_decision") {
         None => Decision::Review,
         Some(v) => parse_decision(v, "default_decision")?,
@@ -112,6 +123,7 @@ fn parse_document(doc: &Yaml) -> Result<Policy, PolicyError> {
     Ok(Policy {
         name,
         version,
+        format,
         default_decision,
         rules,
         tests,
@@ -428,6 +440,46 @@ fn opt_string(map: &Mapping, key: &str, loc: &str) -> Result<Option<String>, Pol
     get(map, key)
         .map(|v| string_of(v, &format!("{loc}.{key}")))
         .transpose()
+}
+
+/// The policy format must be a whole number from 1 up to the engine's format.
+fn check_format(value: &Yaml) -> Result<u32, PolicyError> {
+    let Yaml::Number(n) = value else {
+        return Err(PolicyError::new(
+            "wrong type",
+            "format",
+            "the policy format must be a whole number",
+            "write it without quotes, e.g. format: 1",
+        ));
+    };
+    let Some(format) = n.as_u64() else {
+        return Err(PolicyError::new(
+            "invalid format",
+            "format",
+            format!("'{n}' is not a whole number"),
+            "write format: 1",
+        ));
+    };
+    if format == 0 {
+        return Err(PolicyError::new(
+            "invalid format",
+            "format",
+            "format 0 does not exist",
+            "write format: 1",
+        ));
+    }
+    if format > u64::from(crate::POLICY_FORMAT) {
+        return Err(PolicyError::new(
+            "unsupported format",
+            "format",
+            format!(
+                "this policy declares format {format}, but this engine reads format {} only",
+                crate::POLICY_FORMAT
+            ),
+            "upgrade tpt-policy to a version that reads this format, or change the policy to format 1",
+        ));
+    }
+    Ok(format as u32)
 }
 
 /// A policy version is `MAJOR`, `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`, with

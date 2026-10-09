@@ -19,3 +19,9 @@ pub use testing::{run_tests, TestOutcome};
 
 /// Engine version, recorded in every evaluation for auditability.
 pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// The policy file format this engine reads. A policy may declare `format:`
+/// (default 1). A higher number is refused, so an old engine never guesses at
+/// rules it does not understand. Breaking changes to the policy language bump
+/// this number. The app version does not change it.
+pub const POLICY_FORMAT: u32 = 1;
