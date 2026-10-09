@@ -1,12 +1,13 @@
 #!/usr/bin/env sh
 # Builds a release bundle in the layout from spec §23 and writes checksums (§40).
 #
-# Usage: scripts/package.sh [policy|data|document|invoice|transform]
+# Usage: scripts/package.sh [policy|data|document|invoice|transform|approve]
 #   policy (default): TPT App Policy, binary tpt-policy
 #   data:             TPT Data Validator, binary tpt-data
 #   document:         TPT Document Validator, binary tpt-document
 #   invoice:          TPT Invoice Validator, binary tpt-invoice
 #   transform:        TPT Data Transformer, binary tpt-transform
+#   approve:          TPT Approval Engine, binary tpt-approve
 #
 # Output: dist/<name>-<version>-<platform>.tar.gz, and dist/SHA256SUMS listing
 # every archive in dist/.
@@ -43,9 +44,14 @@ case "$PRODUCT" in
         BINARY=tpt-transform
         NAME_PREFIX=tpt-transform
         ;;
+    approve)
+        CRATE=tpt-approve
+        BINARY=tpt-approve
+        NAME_PREFIX=tpt-approve
+        ;;
     *)
         echo "error: unknown product '$PRODUCT'" >&2
-        echo "  fix: use 'policy', 'data', 'document', 'invoice' or 'transform'" >&2
+        echo "  fix: use 'policy', 'data', 'document', 'invoice', 'transform' or 'approve'" >&2
         exit 1
         ;;
 esac
@@ -104,6 +110,13 @@ elif [ "$PRODUCT" = invoice ]; then
     mkdir -p "$BUNDLE/examples"
     cp -R examples/invoices/. "$BUNDLE/examples/"
     for doc in INVOICE_VALIDATOR DOCUMENT_VALIDATOR SCHEMA_REFERENCE POLICY_REFERENCE SECURITY; do
+        cp "docs/$doc.md" "$BUNDLE/docs/"
+    done
+    cp CHANGELOG.md "$BUNDLE/"
+elif [ "$PRODUCT" = approve ]; then
+    mkdir -p "$BUNDLE/examples"
+    cp -R examples/approval/. "$BUNDLE/examples/"
+    for doc in APPROVAL_ENGINE POLICY_REFERENCE SECURITY; do
         cp "docs/$doc.md" "$BUNDLE/docs/"
     done
     cp CHANGELOG.md "$BUNDLE/"

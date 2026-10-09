@@ -1,0 +1,24 @@
+# Who must approve an expense claim, by amount.
+# Ranges include both ends: "1000-5000" covers 1000 and 5000.
+approval: expense-approval
+version: "1.0.0"
+rules:
+  - id: small-expense
+    description: Expenses under $1,000 are approved automatically
+    when:
+      amount: "<1000"
+    decision: automatic
+
+  - id: manager-band
+    description: Expenses from $1,000 to $5,000 need manager approval
+    when:
+      amount: "1000-5000"
+    approver:
+      role: manager
+
+  - id: director-band
+    description: Expenses over $5,000 need director approval
+    when:
+      amount: ">5000"
+    approver: director
+    requirement: Quote attached

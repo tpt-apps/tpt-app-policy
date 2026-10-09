@@ -1,0 +1,24 @@
+[package]
+name = "tpt-approve"
+description = "TPT Approval Engine: says who must approve a request, from deterministic approval rules"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "tpt-approve"
+path = "src/main.rs"
+
+[dependencies]
+tpt-policy-core.workspace = true
+tpt-report.workspace = true
+tpt-commercial-cli.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true

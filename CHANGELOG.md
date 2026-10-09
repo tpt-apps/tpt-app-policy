@@ -57,6 +57,16 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
   `docs/DATA_TRANSFORMER.md`.
 - The whole input is read into memory. Streaming and joins are not in this version.
 
+### Approval Engine (`tpt-approve`, in development)
+
+- Approval rules in YAML: ranges (`<1000`, `1000-5000`, `>5000`), `decision: automatic`,
+  and one or more approver roles per rule.
+- Compiles to a `tpt-policy-core` policy, so results and explanations match `tpt-policy`.
+  A request no rule covers gets `review`, never approval.
+- `validate` reports amounts no rule covers, and automatic/approval overlaps.
+- `check`, `validate` and `doctor`. Steps and exit codes are documented in
+  `docs/APPROVAL_ENGINE.md`.
+
 ### Known limits
 
 - Single-threaded HTTP server. Not intended for direct internet exposure.

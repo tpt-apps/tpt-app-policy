@@ -440,6 +440,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tpt-approve"
+version = "2026.1.0"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tpt-commercial-cli",
+ "tpt-policy-core",
+ "tpt-report",
+]
+
+[[package]]
 name = "tpt-commercial-cli"
 version = "2026.1.0"
 

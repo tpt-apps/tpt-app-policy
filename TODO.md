@@ -201,11 +201,11 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ## Phase 7 — Approval → TPT Approval Engine
 
-- [ ] Approval policy schema (ranges, roles, automatic decisions)
-- [ ] Output: who/what must approve — no email/workflow features
-- [ ] Reuse policy-core; thin product layer
-- [ ] CLI `tpt-approve`; `doctor`; Docker image (optional)
-- [ ] Docs, examples, landing page, Gumroad listing, bundle
+- [x] Approval policy schema (ranges, roles, automatic decisions). Ranges include both ends. Several approvers are supported, and all must approve.
+- [x] Output: who must approve, as the decision and approvers. No email or workflow features.
+- [x] Reuse policy-core; thin product layer. Rules compile to a policy-core policy; the result format is the same.
+- [x] CLI `tpt-approve` with `validate`, `check` and `doctor`. No Docker image: optional, not built.
+- [~] Docs, examples, landing page, Gumroad listing, bundle. **Done:** `docs/APPROVAL_ENGINE.md`, `examples/approval/`, `scripts/package.sh approve` (Windows). **Missing:** landing page, Gumroad listing, Linux bundle.
 - [ ] Tag **Approval Engine 1.0**
 
 ## Phase 8 — Security → TPT Secure Script Runner

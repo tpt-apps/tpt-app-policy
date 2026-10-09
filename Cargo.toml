@@ -11,6 +11,7 @@ members = [
     "crates/tpt-document",
     "crates/tpt-invoice",
     "crates/tpt-transform",
+    "crates/tpt-approve",
 ]
 
 [workspace.package]
