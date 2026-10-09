@@ -40,11 +40,11 @@ fn example_matches_the_golden_output() {
     let out = scratch("golden");
     let result = run_example(&out);
     assert_eq!(code(&result), 10, "one record is rejected");
-    let transformed = std::fs::read_to_string(out.join("transformed.csv")).unwrap();
-    let expected = std::fs::read_to_string(example("expected/transformed.csv")).unwrap();
+    let transformed = lines(&out.join("transformed.csv"));
+    let expected = lines(&example("expected/transformed.csv"));
     assert_eq!(transformed, expected);
-    let rejected = std::fs::read_to_string(out.join("rejected.jsonl")).unwrap();
-    let expected = std::fs::read_to_string(example("expected/rejected.jsonl")).unwrap();
+    let rejected = lines(&out.join("rejected.jsonl"));
+    let expected = lines(&example("expected/rejected.jsonl"));
     assert_eq!(rejected, expected);
 }
 
@@ -168,4 +168,11 @@ fn doctor_passes() {
     let result = run(&["doctor"]);
     assert_eq!(code(&result), 0);
     assert!(String::from_utf8_lossy(&result.stdout).contains("all checks passed"));
+}
+
+/// Read a text file with line endings made LF, so a checkout with CRLF still matches.
+fn lines(path: &std::path::Path) -> String {
+    std::fs::read_to_string(path)
+        .expect("file is readable")
+        .replace("\r\n", "\n")
 }
