@@ -27,5 +27,6 @@
     "name": "expense",
     "version": "1.0.0"
   },
-  "engine_version": "0.1.0"
+  "engine_version": "2026.1.0",
+  "input_sha256": "8f33720f6c2a3bd6bbf28f4577c62d8f484e3277520b0855769196ca565fdac2"
 }

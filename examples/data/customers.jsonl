@@ -1,0 +1,4 @@
+{"customer_id":"C001","email":"ana@example.com","country":"NZ","credit_limit":5000,"address":{"postcode":"6011"}}
+{"customer_id":"C002","email":"bad-email","country":"AU","credit_limit":"2000"}
+
+{"customer_id":"C003","email":"li@example.com","country":"NZ","credit_limit":250}

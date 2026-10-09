@@ -1,0 +1,21 @@
+schema: customer
+version: "1.0.0"
+fields:
+  customer_id:
+    type: string
+    required: true
+    unique: true
+  email:
+    type: string
+    required: true
+    pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+  country:
+    type: string
+    required: true
+    enum: [NZ, AU, US, GB]
+  credit_limit:
+    type: number
+    min: 0
+    max: 100000
+  address.postcode:
+    type: string

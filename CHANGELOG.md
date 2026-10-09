@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Licence
+
+- Dual-licensed MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`).
+
 Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 
 ### Added
@@ -17,6 +21,11 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 - Stable exit codes, documented in the README.
 - Release bundle script (`scripts/package.sh`) with SHA-256 checksums.
 - Dockerfile, not yet built or tested.
+- `tpt-report` crate: JSON and terminal reporters. The binary uses it for `check`,
+  `run` and `explain`.
+- Golden tests for `check` output and inline `test` runs (`crates/tpt-app-policy/tests/golden.rs`).
+- Docs: install, quickstart, concepts, CLI reference, policy reference,
+  integration, troubleshooting, security (in `docs/`).
 
 ### Known limits
 

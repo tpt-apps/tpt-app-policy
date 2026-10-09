@@ -1,0 +1,8 @@
+customer_id,email,country,credit_limit,address.postcode
+C001,ana@example.com,NZ,5000,6011
+C002,bad-email,AU,2000,2000
+C003,li@example.com,FR,100,1234
+C001,dup@example.com,US,1000,10001
+C004,kai@example.com,GB,250000,SW1A
+C005,,NZ,300,6012
+C006,mia@example.com,US,0,94105

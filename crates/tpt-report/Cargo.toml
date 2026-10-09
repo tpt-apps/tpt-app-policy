@@ -3,7 +3,7 @@ name = "tpt-report"
 description = "Common report model with JSON, terminal and HTML reporters"
 version.workspace = true
 edition.workspace = true
-license-file.workspace = true
+license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
@@ -11,3 +11,5 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+tpt-policy-core.workspace = true
+serde_json.workspace = true

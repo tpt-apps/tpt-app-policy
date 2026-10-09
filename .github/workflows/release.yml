@@ -1,0 +1,48 @@
+name: Release
+
+# Builds the release bundles when a version tag is pushed, e.g. v2026.1.0.
+# Windows bundles are built on a Windows runner, Linux bundles on Ubuntu.
+# The workflow attaches the archives and SHA256SUMS to a GitHub release.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --workspace
+      - run: scripts/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-${{ matrix.os }}
+          path: dist/*.tar.gz
+
+  publish:
+    needs: bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Combine checksums
+        run: |
+          mkdir -p dist
+          find artifacts -name '*.tar.gz' -exec cp {} dist/ \;
+          cd dist && sha256sum *.tar.gz > SHA256SUMS && cat SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

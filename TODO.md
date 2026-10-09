@@ -7,7 +7,7 @@ Source: `spec.txt` (section refs in parentheses). Tick boxes as you go: `- [x]`.
 - Scope: full 10-phase portfolio, built in order (§41). Don't build products in parallel (§50).
 - Layout: single Cargo workspace in this folder; split into separate repos later if wanted (§34 names kept as crate names).
 - Existing TPT repos: github.com/TPT-Solutions/* (tpt-primitives, tpt-capsec, tpt-wasm, tpt-runtime, tpt-crypto, tpt-mcpbox).
-- Licensing: legal licence only. No keys, no activation, no phone-home (§26).
+- Licensing: dual MIT OR Apache-2.0 (open source). Still sold on Gumroad (see `docs/GUMROAD.md`). No keys, no activation, no phone-home (§26).
 - Conflict resolution: severity precedence `rejected > approval_required > review > approved`; approvers/requirements merged from all matched rules (§48 demo).
 - CLI: per-product binaries on a shared framework (`tpt-policy`, `tpt-data`, ...). Each has its own `doctor`.
 - REST: `serve` subcommand inside `tpt-policy`, `POST /v1/evaluate`, localhost by default.
@@ -24,7 +24,7 @@ Source: `spec.txt` (section refs in parentheses). Tick boxes as you go: `- [x]`.
 - [x] Exit-code table — implemented: 0 approved/success, 10 approval_required, 20 review, 30 rejected, 1 file read, 2 invalid policy or usage, 3 invalid input JSON, 4 test failed. Documented in README.md
 - [x] REST server crate — changed from the default axum to `tiny_http` (synchronous, no async runtime, fewer dependencies). Bearer token optional, read from `TPT_POLICY_TOKEN`
 - [x] Which crates to reuse from TPT-Solutions vs. write fresh — decided: `tpt-policy-core` stays independent of `tpt-runtime-policy` and `tpt-mcpbox-policy`. Keeps the commercial core small and stable (§33).
-- [ ] Product pricing/tiers: Standard + Commercial only (§27–28)
+- [x] Product pricing: one product, one price, one sale (suggested $49). No tiers, no update promise. Listing in `docs/GUMROAD.md`
 
 ## Phase 0 — Workspace & shared groundwork
 
@@ -59,16 +59,16 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Tests: 24 behaviour tests in `crates/tpt-policy-core/tests/evaluation.rs`
 
 ### tpt-schema (minimal at this stage) (§34)
-- [ ] Schema abstraction + validation model + diagnostics. **Not started.** The crate exists and is empty; Phase 3 builds it out.
+- [x] Schema abstraction + validation model + diagnostics. Done in Phase 3: `parse_schema` (what/where/why/fix errors), `check_record` (types, required, enum, pattern, min/max), `UniqueIndex`. Tested in `crates/tpt-schema/tests/schema.rs`.
 
 ### tpt-report (§20)
-- [ ] Common report model (status, timestamp, product, version, input, summary, errors). **Not started.** The JSON output is built directly in the binary for now and should move here.
-- [ ] JSON reporter
-- [ ] Terminal reporter. **Partly done:** `explain` text output lives in the binary.
+- [~] Common report model (status, timestamp, product, version, input, summary, errors). **Partly done:** the reporters take `Evaluation` from `tpt-policy-core`. No separate report model yet, and the JSON output has no product or timestamp fields by design.
+- [x] JSON reporter
+- [x] Terminal reporter. Moved from the binary into `tpt-report::terminal`.
 - [ ] HTML reporter (can wait until Phase 3)
 
 ### tpt-commercial-cli (§18, §19, §38)
-- [ ] Common flags. **Partly done:** `--format` on `check` and `explain`, and `--version`. **Missing:** `--config --policy --schema --output --json --verbose --quiet`
+- [~] Common flags. **Done:** `--format` on `check` and `explain`, `--version`, `--output FILE` on `check`/`explain`/`run`, `--quiet` on `validate`/`test`. **Missing:** `--config --policy --schema --json --verbose` (`--config` and `--schema` wait on their designs; `--json` and `--verbose` are not needed by any current command).
 - [ ] `--debug`, `--json-logs`; logs never dump customer records by default. **Not started.** Current output contains no logs.
 - [ ] Config discovery (`./tpt/config|policies|schemas|templates|reports`), no hidden DB. **Not started.**
 - [ ] Diagnostics formatter. **Partly done:** `PolicyError` renders what / where / why / fix; not yet shared across products
@@ -81,7 +81,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] `test policy.yaml` (PASS/FAIL output and summary)
 - [x] `run policy.yaml` via stdin/stdout
 - [x] `--version`
-- [ ] Audit fields in output (§21). **Partly done:** engine version, policy name and version. **Missing:** product version, schema version (no schema yet), rule IDs are present but no timestamp (left out on purpose so output stays deterministic), and an optional input hash.
+- [~] Audit fields in output (§21). **Done:** engine version, policy name and version, rule IDs, and `input_sha256` (canonical SHA-256 of the input). **Missing:** a separate product version (the engine and the product are one crate, so `engine_version` serves for now), schema version (no schema yet). No timestamp, on purpose, so output stays deterministic.
 - [x] §48 expense demo: the output has the spec's `decision`, `approvers` and `matched_rules`. It also has extra fields (explanations, failed rules, warnings, versions).
 - [x] README draft with quickstart (`README.md`). Separate QUICKSTART file not yet split out.
 - [ ] Tag **App Policy 0.1**. Waiting on your go-ahead to commit and tag. Nothing is committed yet.
@@ -97,73 +97,73 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [ ] Integrate tpt-capsec (capability model)
 - [ ] Integrate tpt-runtime (lifecycle, resource limits)
 - [~] Integrate tpt-wasm (WASM sandbox). **Checked:** tpt-wasm is MIT OR Apache-2.0. Its only third-party dependency is `wast` (Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT), used only by `tpt-wasm-spec`, a spec test harness. So a product that does not depend on `tpt-wasm-spec` picks up no third-party licence issue. Re-run `cargo deny` on the final dependency tree before embedding.
-- [ ] Resource limits (time, memory, input size)
-- [ ] Deterministic mode
+- [~] Resource limits (time, memory, input size). **Done:** input size: 10 MB in the CLI, 1 MB over HTTP. **Not needed yet:** time limits, since evaluation is linear in rules and input size and has no loops or I/O. Memory follows from the input size limit.
+- [x] Deterministic mode (always on: no clock, no randomness; tested byte-identical across runs)
 - [ ] Expose policy evaluation as an embeddable WASM module (§8.4)
 - [x] REST: `tpt-policy serve`, `POST /v1/evaluate` (plus `GET /healthz`). Localhost by default, optional bearer token, 1 MB body limit. Tested over real sockets. Single-threaded.
 - [x] `doctor` subcommand: runtime, config, permissions, install, version, optional deps (§29.5). Checks version, platform, working-directory write test, `./tpt` layout (§19, optional), and a built-in self-test. Optional-dependency checks are not needed yet, since no optional dependencies exist.
 - [ ] Signed policy bundles / release checksums via tpt-crypto (optional signatures)
 - [~] Docker image (`tpt/app-policy`) (§25). `Dockerfile` written. **Not built or tested:** Docker is not installed here.
-- [x] Release bundle layout (§23). `scripts/package.sh` builds it, with checksums. Tested on Windows (Git Bash) only. Linux and macOS not yet tested. It refuses to package without `LICENSE.txt` (see Commercial wrapper).
+- [x] Release bundle layout (§23). `scripts/package.sh` builds it, with checksums. Tested on Windows (Git Bash) only. Linux and macOS not yet tested. It refuses to package without `LICENSE-MIT` and `LICENSE-APACHE`.
 - [ ] Windows x64 build + install test on a clean machine
 - [ ] Linux x64 build + install test on a clean machine
 - [~] Checksums + release notes for each version (§40). **Done:** `SHA256SUMS` from the packaging script, and `CHANGELOG.md`. **Missing:** signatures (optional in §40)
 
 ### Docs for 1.0 (§30)
-- [ ] README
-- [ ] INSTALL
-- [ ] QUICKSTART
-- [ ] CONCEPTS
-- [ ] CONFIGURATION
-- [ ] CLI_REFERENCE
-- [ ] POLICY_REFERENCE
-- [ ] SCHEMA_REFERENCE
-- [ ] INTEGRATION (with copy/paste ERP→JSON→ERP example)
-- [ ] TROUBLESHOOTING
-- [ ] SECURITY
-- [ ] LICENCE
-- [ ] CHANGELOG
+- [x] README
+- [x] INSTALL (in `docs/`)
+- [x] QUICKSTART (in `docs/`)
+- [x] CONCEPTS (in `docs/`)
+- [ ] CONFIGURATION (blocked: no config file format exists yet, so there is nothing to document)
+- [x] CLI_REFERENCE (in `docs/`)
+- [x] POLICY_REFERENCE (in `docs/`)
+- [x] SCHEMA_REFERENCE (in `docs/`)
+- [~] INTEGRATION (in `docs/`). **Done:** generic JSON-in/decision-out pattern with HTTP and CLI examples. **Missing:** a real ERP example, which needs a chosen ERP and sample exports.
+- [x] TROUBLESHOOTING (in `docs/`)
+- [x] SECURITY (in `docs/`)
+- [x] LICENCE: dual MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`). Copyright holder line in `LICENSE-MIT` to confirm.
+- [~] CHANGELOG (Unreleased section exists; needs a tagged version)
 
 ### Commercial wrapper
-- [ ] Commercial licence text (personal eval / internal use / redistribution / modification / embedding / source) (§26). **Blocks release packaging:** `LICENSE.txt` is missing, and the packaging script refuses to build a distributable bundle without it. This is a legal decision, so I have not written one.
+- [x] Licence (§26) replaced by dual MIT OR Apache-2.0. A separate commercial licence is no longer planned; the paid offer is the Gumroad product (see `docs/GUMROAD.md`).
 - [ ] Support-boundary statement (§43)
 - [ ] Privacy statement: no data leaves the machine (§39)
 - [ ] Landing page (§31)
-- [ ] Gumroad listings: Standard + Commercial (§27)
+- [ ] Gumroad listing: one product, $49 suggested (§27). Full setup in `docs/GUMROAD.md`. Still to do: set the price in Gumroad, the refund wording, and the checklist there.
 - [ ] Policy templates/examples (purchase order, expense, etc.)
 
 ### 1.0 acceptance criteria (§47) — do not ship until all pass
 - [ ] Windows install works
 - [ ] Linux install works
-- [ ] Runs without any cloud account
-- [ ] `--version` works
-- [ ] `doctor` works
-- [ ] YAML policies load
-- [ ] Invalid policies produce useful errors
-- [ ] Policy version recorded in output
-- [ ] Rules can be named and described
-- [ ] Evaluation: nested fields, strings, numbers, booleans, arrays
-- [ ] Evaluation: equality, inequality, greater/less than, AND, OR, existence checks
-- [ ] Decision outputs
-- [ ] Diagnostics: matched rules, failed rules, explanations, stable exit codes
-- [ ] Interfaces: CLI, stdin/stdout, JSON, REST, Docker
-- [ ] Testing: policy test files, golden tests, deterministic output tests
-- [ ] Docs: quickstart, policy reference, CLI reference, integration example, troubleshooting
+- [x] Runs without any cloud account
+- [x] `--version` works
+- [x] `doctor` works
+- [x] YAML policies load
+- [x] Invalid policies produce useful errors
+- [x] Policy version recorded in output
+- [x] Rules can be named and described
+- [x] Evaluation: nested fields, strings, numbers, booleans, arrays
+- [x] Evaluation: equality, inequality, greater/less than, AND, OR, existence checks
+- [x] Decision outputs
+- [x] Diagnostics: matched rules, failed rules, explanations, stable exit codes
+- [ ] Interfaces: CLI, stdin/stdout, JSON, REST, Docker (Docker not tested)
+- [x] Testing: policy test files, golden tests, deterministic output tests
+- [x] Docs: quickstart, policy reference, CLI reference, integration example, troubleshooting
 - [ ] **Success test (§51):** a new user goes from zero to a working rule in < 15 minutes without contacting you
 - [ ] Tag **App Policy 1.0** and publish
 
 ## Phase 3 — Data Platform → TPT Data Validator
 
-- [ ] `tpt-schema` full: schema definition (YAML), types, required, enums, patterns, uniqueness. Note: §34 lists `tpt-schema` as a new shared repo. It does not exist on GitHub yet; it is currently an empty crate in this workspace.
-- [ ] `tpt-data-core`: record abstraction, CSV, JSON, JSON Lines, streaming
-- [ ] Validation engine using policy core + schema
-- [ ] Outputs: validated data, invalid records, error report, summary report
-- [ ] Row-level error messages (row, field, reason) as in §9.2
-- [ ] HTML report (finish `tpt-report` HTML)
-- [ ] CLI `tpt-data validate file --schema ...`; `doctor`
+- [x] `tpt-schema` full: schema definition (YAML), types, required, enums, patterns, uniqueness. Note: §34 lists `tpt-schema` as a new shared repo. It does not exist on GitHub yet; it lives in this workspace.
+- [~] `tpt-data-core`: record abstraction, CSV, JSON, JSON Lines, streaming. **Done:** CSV and JSON Lines stream one record at a time. **Not streamed:** a JSON array is read in full. Use JSON Lines for big files.
+- [x] Validation engine using policy core + schema. Schema first, then duplicates, then the policy on valid records only (typed values, so `gt` works on CSV text).
+- [x] Outputs: validated data, invalid records, error report, summary report
+- [x] Row-level error messages (row, field, reason) as in §9.2
+- [ ] HTML report (finish `tpt-report` HTML). Not started.
+- [x] CLI `tpt-data validate file --schema ...`; `doctor`. Exit codes: 0 all valid, 1 I/O, 2 bad schema/policy/usage, 3 unreadable input, 10 invalid records (outputs still written).
 - [ ] Docker image
-- [ ] Docs, examples, landing page, Gumroad listing
-- [ ] Windows + Linux release bundle
+- [~] Docs, examples, landing page, Gumroad listing. **Done:** `docs/DATA_VALIDATOR.md`, `docs/SCHEMA_REFERENCE.md`, examples in `examples/data/`. **Missing:** landing page, Gumroad listing.
+- [ ] Windows + Linux release bundle. `scripts/package.sh` only packages `tpt-policy` so far.
 - [ ] Tag **Data Validator 1.0**
 
 ## Phase 4 — Document Platform → TPT Document Validator

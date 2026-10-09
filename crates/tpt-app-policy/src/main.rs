@@ -8,7 +8,7 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand, ValueEnum};
 use serde_json::Value;
 use tpt_commercial_cli::exit;
-use tpt_policy_core::{evaluate, parse_policy, run_tests, Decision, Evaluation, Policy};
+use tpt_policy_core::{evaluate, parse_policy, run_tests, Decision, Policy};
 
 mod doctor;
 mod serve;
@@ -27,7 +27,12 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Check a policy file for errors without evaluating anything
-    Validate { policy: PathBuf },
+    Validate {
+        policy: PathBuf,
+        /// Print nothing when the policy is valid. Errors still print.
+        #[arg(long)]
+        quiet: bool,
+    },
     /// Evaluate a policy against an input file and print the decision
     Check {
         policy: PathBuf,
@@ -35,6 +40,9 @@ enum Command {
         input: PathBuf,
         #[arg(long, value_enum, default_value = "json")]
         format: Format,
+        /// Write the result to this file instead of stdout
+        #[arg(long, value_name = "FILE")]
+        output: Option<PathBuf>,
     },
     /// Like check, but also lists failed rules and why they failed
     Explain {
@@ -43,11 +51,24 @@ enum Command {
         input: PathBuf,
         #[arg(long, value_enum, default_value = "text")]
         format: Format,
+        /// Write the result to this file instead of stdout
+        #[arg(long, value_name = "FILE")]
+        output: Option<PathBuf>,
     },
     /// Read JSON from stdin and print the decision as JSON
-    Run { policy: PathBuf },
+    Run {
+        policy: PathBuf,
+        /// Write the result to this file instead of stdout
+        #[arg(long, value_name = "FILE")]
+        output: Option<PathBuf>,
+    },
     /// Run the inline tests defined in the policy file
-    Test { policy: PathBuf },
+    Test {
+        policy: PathBuf,
+        /// Print only failing tests and the summary of failures
+        #[arg(long)]
+        quiet: bool,
+    },
     /// Serve evaluations over HTTP (POST /v1/evaluate)
     Serve {
         policy: PathBuf,
@@ -71,15 +92,17 @@ enum Format {
 
 fn main() -> ExitCode {
     match Cli::parse().command {
-        Command::Validate { policy } => match load_policy(&policy) {
+        Command::Validate { policy, quiet } => match load_policy(&policy) {
             Ok(p) => {
-                println!(
-                    "valid: {} (version {}, {} rules, {} tests)",
-                    p.name,
-                    p.version,
-                    p.rules.len(),
-                    p.tests.len()
-                );
+                if !quiet {
+                    println!(
+                        "valid: {} (version {}, {} rules, {} tests)",
+                        p.name,
+                        p.version,
+                        p.rules.len(),
+                        p.tests.len()
+                    );
+                }
                 ExitCode::from(exit::SUCCESS)
             }
             Err(code) => code,
@@ -88,14 +111,22 @@ fn main() -> ExitCode {
             policy,
             input,
             format,
-        } => decide(&policy, &input, format, false),
+            output,
+        } => decide(&policy, &input, format, false, output.as_deref()),
         Command::Explain {
             policy,
             input,
             format,
-        } => decide(&policy, &input, format, true),
-        Command::Run { policy } => decide(&policy, Path::new("-"), Format::Json, false),
-        Command::Test { policy } => run_policy_tests(&policy),
+            output,
+        } => decide(&policy, &input, format, true, output.as_deref()),
+        Command::Run { policy, output } => decide(
+            &policy,
+            Path::new("-"),
+            Format::Json,
+            false,
+            output.as_deref(),
+        ),
+        Command::Test { policy, quiet } => run_policy_tests(&policy, quiet),
         Command::Serve {
             policy,
             listen,
@@ -140,18 +171,40 @@ fn load_policy(path: &Path) -> Result<Policy, ExitCode> {
     })
 }
 
+/// Largest input the CLI will read. Larger inputs are refused, so one command
+/// cannot exhaust memory. The HTTP service has its own 1 MB limit.
+const MAX_INPUT_BYTES: u64 = 10 * 1024 * 1024;
+
 fn read_input(path: &Path) -> Result<Value, ExitCode> {
     let (source, text) = if path == Path::new("-") {
         let mut buf = String::new();
-        let result = io::stdin().read_to_string(&mut buf);
+        let result = io::stdin()
+            .take(MAX_INPUT_BYTES + 1)
+            .read_to_string(&mut buf);
         ("stdin".to_string(), result.map(|_| buf))
     } else {
+        let too_big = fs::metadata(path).is_ok_and(|m| m.len() > MAX_INPUT_BYTES);
+        if too_big {
+            eprintln!(
+                "error: input is larger than {} MB\n  why: the CLI reads inputs up to this size\n  fix: split the input into smaller files, or use the HTTP service for single records\n  file: {}",
+                MAX_INPUT_BYTES / (1024 * 1024),
+                path.display()
+            );
+            return Err(ExitCode::from(exit::INVALID_INPUT));
+        }
         (path.display().to_string(), fs::read_to_string(path))
     };
     let text = text.map_err(|e| {
         eprintln!("error: cannot read input '{source}': {e}");
         ExitCode::from(exit::IO_ERROR)
     })?;
+    if text.len() as u64 > MAX_INPUT_BYTES {
+        eprintln!(
+            "error: input is larger than {} MB\n  why: the CLI reads inputs up to this size\n  fix: split the input into smaller files, or use the HTTP service for single records\n  file: {source}",
+            MAX_INPUT_BYTES / (1024 * 1024)
+        );
+        return Err(ExitCode::from(exit::INVALID_INPUT));
+    }
     serde_json::from_str(&text).map_err(|e| {
         eprintln!(
             "error: input is not valid JSON\n  why: {e}\n  fix: check the JSON syntax at the line shown\n  file: {source}"
@@ -160,7 +213,13 @@ fn read_input(path: &Path) -> Result<Value, ExitCode> {
     })
 }
 
-fn decide(policy_path: &Path, input_path: &Path, format: Format, explain: bool) -> ExitCode {
+fn decide(
+    policy_path: &Path,
+    input_path: &Path,
+    format: Format,
+    explain: bool,
+    output: Option<&Path>,
+) -> ExitCode {
     let policy = match load_policy(policy_path) {
         Ok(p) => p,
         Err(code) => return code,
@@ -171,17 +230,25 @@ fn decide(policy_path: &Path, input_path: &Path, format: Format, explain: bool) 
     };
 
     let evaluation = evaluate(&policy, &input);
-    match format {
-        Format::Json => println!(
-            "{}",
-            serde_json::to_string_pretty(&evaluation).expect("evaluation is always serialisable")
-        ),
-        Format::Text => print!("{}", render_text(&evaluation, explain)),
+    let text = match format {
+        Format::Json => format!("{}\n", tpt_report::json(&evaluation)),
+        Format::Text => tpt_report::terminal(&evaluation, explain),
+    };
+    if let Some(path) = output {
+        if let Err(e) = fs::write(path, text) {
+            eprintln!(
+                "error: cannot write output '{}': {e}\n  fix: check the folder exists and is writable",
+                path.display()
+            );
+            return ExitCode::from(exit::IO_ERROR);
+        }
+    } else {
+        print!("{text}");
     }
     ExitCode::from(decision_exit_code(evaluation.decision))
 }
 
-fn run_policy_tests(path: &Path) -> ExitCode {
+fn run_policy_tests(path: &Path, quiet: bool) -> ExitCode {
     let policy = match load_policy(path) {
         Ok(p) => p,
         Err(code) => return code,
@@ -195,17 +262,22 @@ fn run_policy_tests(path: &Path) -> ExitCode {
     let mut failed = 0;
     for outcome in &outcomes {
         if outcome.passed {
-            println!("PASS {}", outcome.name);
+            if !quiet {
+                println!("PASS {}", outcome.name);
+            }
         } else {
             failed += 1;
             println!("FAIL {}: {}", outcome.name, outcome.message);
         }
     }
-    println!();
     if failed == 0 {
-        println!("{} tests passed", outcomes.len());
+        if !quiet {
+            println!();
+            println!("{} tests passed", outcomes.len());
+        }
         ExitCode::from(exit::SUCCESS)
     } else {
+        println!();
         println!("{failed} of {} tests failed", outcomes.len());
         ExitCode::from(exit::TEST_FAILED)
     }
@@ -218,38 +290,4 @@ fn decision_exit_code(decision: Decision) -> u8 {
         Decision::ApprovalRequired => exit::APPROVAL_REQUIRED,
         Decision::Rejected => exit::REJECTED,
     }
-}
-
-fn render_text(ev: &Evaluation, explain: bool) -> String {
-    let mut lines = vec![
-        format!("decision: {}", ev.decision),
-        format!("policy: {} (version {})", ev.policy.name, ev.policy.version),
-    ];
-    if !ev.approvers.is_empty() {
-        lines.push(format!("approvers: {}", ev.approvers.join(", ")));
-    }
-    if !ev.requirements.is_empty() {
-        lines.push(format!("requirements: {}", ev.requirements.join(", ")));
-    }
-    if ev.matched_rules.is_empty() {
-        lines.push("matched rules: none (default decision applied)".to_string());
-    } else {
-        lines.push(format!("matched rules: {}", ev.matched_rules.join(", ")));
-    }
-    for warning in &ev.warnings {
-        lines.push(format!("warning: {warning}"));
-    }
-    if explain {
-        lines.push(String::new());
-        lines.push("explanations:".to_string());
-        for e in &ev.explanations {
-            lines.push(format!("  {} ({}): {}", e.rule, e.decision, e.message));
-        }
-        lines.push("failed rules:".to_string());
-        for f in &ev.failed_rules {
-            lines.push(format!("  {}: {}", f.rule, f.reason));
-        }
-    }
-    lines.push(String::new());
-    lines.join("\n")
 }

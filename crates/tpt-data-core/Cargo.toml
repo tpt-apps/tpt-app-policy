@@ -1,6 +1,6 @@
 [package]
-name = "tpt-policy-core"
-description = "Deterministic policy evaluation engine for TPT App Policy"
+name = "tpt-data-core"
+description = "Record reading, validation and reporting for TPT Data Validator"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,7 +11,9 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+tpt-schema.workspace = true
+tpt-policy-core.workspace = true
+csv.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-serde_yaml.workspace = true
 sha2.workspace = true

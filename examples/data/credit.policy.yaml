@@ -1,0 +1,13 @@
+policy: credit-review
+version: "1.0.0"
+default_decision: approved
+
+rules:
+  - id: large-limit
+    description: Credit limits over 4000 need a credit review
+    when:
+      credit_limit:
+        gt: 4000
+    then:
+      decision: review
+      approver: credit-team

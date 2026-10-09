@@ -1,6 +1,6 @@
 [package]
-name = "tpt-app-policy"
-description = "TPT App Policy: self-hosted deterministic business-rule engine"
+name = "tpt-data"
+description = "TPT Data Validator: check CSV, JSON and JSON Lines records against a schema"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,13 +11,13 @@ publish.workspace = true
 workspace = true
 
 [[bin]]
-name = "tpt-policy"
+name = "tpt-data"
 path = "src/main.rs"
 
 [dependencies]
+tpt-data-core.workspace = true
+tpt-schema.workspace = true
 tpt-policy-core.workspace = true
-tpt-commercial-cli.workspace = true
 clap.workspace = true
+serde.workspace = true
 serde_json.workspace = true
-tiny_http.workspace = true
-tpt-report.workspace = true

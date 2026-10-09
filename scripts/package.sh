@@ -25,17 +25,13 @@ PLATFORM="$OS-$ARCH"
 NAME="tpt-app-policy-$VERSION"
 BUNDLE="dist/$NAME"
 
-# The licence is a legal decision, not something to invent here. Refuse to
-# ship without one unless a test build explicitly opts in.
-if [ ! -f LICENSE.txt ]; then
-    if [ "${TPT_ALLOW_UNLICENSED:-}" = "1" ]; then
-        echo "warning: LICENSE.txt is missing; this bundle is for internal testing only" >&2
-    else
-        echo "error: LICENSE.txt is missing. Add the commercial licence before packaging." >&2
-        echo "  fix: add LICENSE.txt, or set TPT_ALLOW_UNLICENSED=1 for an internal test build" >&2
+# Both licence texts ship in every bundle. Refuse to package without them.
+for f in LICENSE-MIT LICENSE-APACHE; do
+    if [ ! -f "$f" ]; then
+        echo "error: $f is missing" >&2
         exit 1
     fi
-fi
+done
 
 echo "building $NAME for $PLATFORM"
 cargo build --release -p tpt-app-policy
@@ -46,13 +42,12 @@ mkdir -p "$BUNDLE/bin" "$BUNDLE/examples" "$BUNDLE/policies" "$BUNDLE/schemas" "
 cp "target/release/tpt-policy$EXT" "$BUNDLE/bin/"
 cp -R examples/. "$BUNDLE/examples/"
 cp examples/expense/expense.yaml examples/purchasing/purchasing.yaml "$BUNDLE/policies/"
-cp docs/ARCHITECTURE.md "$BUNDLE/docs/"
+# User-facing docs only. ARCHITECTURE.md is internal planning and stays out.
+for doc in INSTALL QUICKSTART CONCEPTS CLI_REFERENCE POLICY_REFERENCE INTEGRATION TROUBLESHOOTING SECURITY SUPPORT FAQ; do
+    cp "docs/$doc.md" "$BUNDLE/docs/"
+done
 cp README.md CHANGELOG.md "$BUNDLE/"
-if [ -f LICENSE.txt ]; then
-    cp LICENSE.txt "$BUNDLE/"
-else
-    echo "UNLICENSED INTERNAL TEST BUILD. Do not distribute." > "$BUNDLE/LICENSE.txt"
-fi
+cp LICENSE-MIT LICENSE-APACHE "$BUNDLE/"
 
 # Version and platform in the bundle itself, so a loose binary can be identified.
 "$BUNDLE/bin/tpt-policy$EXT" --version > "$BUNDLE/VERSION.txt"

@@ -24,6 +24,10 @@ pub struct Evaluation {
     pub warnings: Vec<String>,
     pub policy: PolicyRef,
     pub engine_version: &'static str,
+    /// SHA-256 of the input in canonical form (keys sorted, no whitespace).
+    /// Lets an audit prove which input produced the decision, without
+    /// storing the input itself.
+    pub input_sha256: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -89,6 +93,41 @@ pub fn evaluate(policy: &Policy, input: &Value) -> Evaluation {
             version: policy.version.clone(),
         },
         engine_version: ENGINE_VERSION,
+        input_sha256: input_fingerprint(input),
+    }
+}
+
+/// SHA-256 over the canonical JSON form of `input`. Object keys are sorted
+/// recursively, so the same data gives the same hash however it was written.
+pub fn input_fingerprint(input: &Value) -> String {
+    use sha2::{Digest, Sha256};
+    let canonical = canonical_json(input);
+    let digest = Sha256::digest(canonical.as_bytes());
+    digest.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn canonical_json(value: &Value) -> String {
+    match value {
+        Value::Object(map) => {
+            let mut keys: Vec<&String> = map.keys().collect();
+            keys.sort();
+            let parts: Vec<String> = keys
+                .into_iter()
+                .map(|k| {
+                    format!(
+                        "{}:{}",
+                        serde_json::to_string(k).expect("string is serialisable"),
+                        canonical_json(&map[k])
+                    )
+                })
+                .collect();
+            format!("{{{}}}", parts.join(","))
+        }
+        Value::Array(items) => {
+            let parts: Vec<String> = items.iter().map(canonical_json).collect();
+            format!("[{}]", parts.join(","))
+        }
+        other => other.to_string(),
     }
 }
 

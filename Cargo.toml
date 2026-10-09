@@ -6,12 +6,14 @@ members = [
     "crates/tpt-report",
     "crates/tpt-commercial-cli",
     "crates/tpt-app-policy",
+    "crates/tpt-data-core",
+    "crates/tpt-data",
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "2026.1.0"
 edition = "2021"
-license-file = "LICENSE.txt"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/TPT-Solutions/tpt-app-policy"
 publish = false
 
@@ -23,12 +25,16 @@ serde_yaml = "0.9"
 thiserror = "2"
 clap = { version = "4", features = ["derive", "env"] }
 tiny_http = "0.12"
+sha2 = "0.11"
+csv = "1"
+regex = "1"
 
 # Internal crates
 tpt-policy-core = { path = "crates/tpt-policy-core" }
 tpt-schema = { path = "crates/tpt-schema" }
 tpt-report = { path = "crates/tpt-report" }
 tpt-commercial-cli = { path = "crates/tpt-commercial-cli" }
+tpt-data-core = { path = "crates/tpt-data-core" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -3,7 +3,7 @@ name = "tpt-commercial-cli"
 description = "Shared CLI conventions, configuration, diagnostics and exit codes"
 version.workspace = true
 edition.workspace = true
-license-file.workspace = true
+license.workspace = true
 repository.workspace = true
 publish.workspace = true
 

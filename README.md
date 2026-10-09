@@ -3,9 +3,17 @@
 Define business rules in a YAML file. Check JSON data against them. Get a
 decision and the rules that produced it. Runs locally, offline, with no account.
 
-> Status: **0.1 (pre-release).** The CLI and policy format work. The REST
-> service, Docker image, `doctor` command and Windows/Linux release bundles are
-> not built yet. See [TODO.md](TODO.md).
+> Status: **0.1 (pre-release).** The CLI, policy format, HTTP service and
+> `doctor` command work. The Docker image is written but not tested, and the
+> Windows/Linux release bundle waits on the licence. See [TODO.md](TODO.md).
+
+## Documentation
+
+- [Install](docs/INSTALL.md) · [Quickstart](docs/QUICKSTART.md) · [Concepts](docs/CONCEPTS.md)
+- [CLI reference](docs/CLI_REFERENCE.md) · [Policy reference](docs/POLICY_REFERENCE.md)
+- [Integration](docs/INTEGRATION.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [FAQ and tips](docs/FAQ.md)
+- [Security](docs/SECURITY.md) · [Get help](docs/SUPPORT.md)
+- Data Validator (in development): [command reference](docs/DATA_VALIDATOR.md) · [schema reference](docs/SCHEMA_REFERENCE.md)
 
 ## Quickstart
 
@@ -134,4 +142,10 @@ tpt-policy test examples/purchasing/purchasing.yaml
 
 ## Licence
 
-Not yet decided. See [TODO.md](TODO.md).
+Dual-licensed under either of
+
+- [Apache License, Version 2.0](LICENSE-APACHE)
+- [MIT license](LICENSE-MIT)
+
+at your option. Unless you state otherwise, any contribution you submit is
+dual-licensed as above, without additional terms.
