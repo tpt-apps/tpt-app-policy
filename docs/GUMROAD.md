@@ -26,6 +26,33 @@ in the bundle, and the repository is public, so buyers can see that the software
 is open source. Do not describe the product as proprietary, closed source, or
 "not open source", in the listing, the docs, or any reply to a buyer.
 
+### The nine listings
+
+Each app is its own Gumroad product, so a buyer can buy one tool without the
+others. Every listing follows the model above. The bundle files come from
+`scripts/package.sh <product>`, and CI builds and smoke-tests all nine.
+
+| Gumroad product (2026) | Slug | Bundle prefix | Summary (card line) | Suggested price |
+|---|---|---|---|---|
+| TPT App Policy 2026 | `tpt-app-policy-2026` | `tpt-app-policy` | Offline business rules in YAML. Check JSON, get a decision and the rules that made it. | $49 (suggested) |
+| TPT Data Validator 2026 | `tpt-data-2026` | `tpt-data` | Check CSV, JSON and JSON Lines records against a schema, offline. | $39 (suggested) |
+| TPT Document Validator 2026 | `tpt-document-2026` | `tpt-document` | Check JSON and XML documents against a schema and a policy, offline. | $39 (suggested) |
+| TPT Invoice Validator 2026 | `tpt-invoice-2026` | `tpt-invoice` | Check invoices for arithmetic, approved suppliers and duplicates. | $49 (suggested) |
+| TPT Data Transformer 2026 | `tpt-transform-2026` | `tpt-transform` | Reshape CSV, JSON and JSON Lines records with a repeatable pipeline. | $39 (suggested) |
+| TPT Approval Engine 2026 | `tpt-approve-2026` | `tpt-approve` | Say who must approve a request, from deterministic approval rules. | $39 (suggested) |
+| TPT Compliance Evidence Processor 2026 | `tpt-evidence-2026` | `tpt-evidence` | Inventory, check, hash and report on compliance evidence. It does not certify compliance. | $59 (suggested) |
+| TPT AI Action Guard 2026 | `tpt-ai-guard-2026` | `tpt-ai-guard` | Decide ALLOW, DENY or REQUIRE_APPROVAL for actions an AI agent asks to take. | $49 (suggested) |
+| TPT Secure Script Runner 2026 | `tpt-secure-run-2026` | `tpt-secure-run` | Run a WebAssembly script with only the file access its manifest grants. | $49 (suggested) |
+
+The prices are suggestions. They are not set anywhere until you choose them.
+Each bundle's files are `<prefix>-2026.1.0-windows-x64.tar.gz`,
+`<prefix>-2026.1.0-linux-x64.tar.gz` and `SHA256SUMS`. `SHA256SUMS` lists every
+bundle built in the same run, so buyers should check the line for their own
+archive.
+
+Sections 1 to 8 are written for TPT App Policy 2026. Use them as the template for
+the other eight, changing the name, slug, files, summary and price.
+
 ## 1. Product settings
 
 | Field | Value |
@@ -64,6 +91,14 @@ Each bundle contains `bin/`, `docs/`, `examples/`, `policies/`, `README.md`,
 | Product | Price | Includes |
 |---|---|---|
 | TPT App Policy 2026 | $49 one-time (suggested) | Windows and Linux bundles for the 2026 release, all docs, examples and self-service help |
+| TPT Data Validator 2026 | $39 one-time (suggested) | Windows and Linux bundles for the 2026 release, all docs, examples and self-service help |
+| TPT Document Validator 2026 | $39 one-time (suggested) | As above |
+| TPT Invoice Validator 2026 | $49 one-time (suggested) | As above |
+| TPT Data Transformer 2026 | $39 one-time (suggested) | As above |
+| TPT Approval Engine 2026 | $39 one-time (suggested) | As above |
+| TPT Compliance Evidence Processor 2026 | $59 one-time (suggested) | As above |
+| TPT AI Action Guard 2026 | $49 one-time (suggested) | As above |
+| TPT Secure Script Runner 2026 | $49 one-time (suggested) | As above |
 
 Set the price for each year separately. A new release year is a new paid
 purchase, so the 2027 price is its own decision.
@@ -240,7 +275,8 @@ to the Gumroad product, because nothing in the software would check them.
 
 Items 1 to 3 block a sale.
 
-1. [ ] Windows install tested on a clean Windows machine: unzip, check the
+1. [ ] Windows install tested on a clean Windows machine for each listing,
+   App Policy first: unzip, check the
    checksum, run `tpt-policy doctor`, run the quickstart. Include the SmartScreen
    steps from `docs/TROUBLESHOOTING.md`.
 2. [ ] Linux install tested on a clean Linux machine. The release workflow builds

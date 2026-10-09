@@ -10,6 +10,11 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 
 ### Added
 
+- Help text for every binary: a quick start, the exit codes, and examples for each command. Every argument has a fuller description, shown by `--help`.
+- HTML reports: hover tooltips on field labels and table headers, for the policy decision page and the data validator report.
+- The release workflow builds all nine product bundles. Before, it built only TPT App Policy.
+- CI builds and smoke-tests the bundles for all nine products on Ubuntu and Windows. Each bundle is unpacked and its binary's `--version` and `doctor` are run. Bundles are unsigned, so `SHA256SUMS` is the integrity check.
+- `docs/GUMROAD.md` covers all nine listings, with a summary and a suggested price for each. The prices are suggestions until set.
 - `--verbose`, `--debug` and `--json-logs` on every product binary, from the shared `tpt-commercial-cli::log` module. Logs go to stderr and never include input values. Each run logs its start and its exit code. `tpt-policy` also logs the policy, input and decision. Documented in `docs/CLI_REFERENCE.md`.
 - Config discovery: a bare policy name resolves against `./tpt/policies/`. The layout check in `doctor` uses the same shared code.
 - Policy `format:` (a whole number, default 1). A policy declaring a format newer than the engine's is refused with a message to upgrade. Documented in `docs/POLICY_REFERENCE.md`.
