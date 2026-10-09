@@ -1,0 +1,21 @@
+# Container image for TPT Document Validator (tpt-document).
+#
+# Build:  docker build -f Dockerfile.document -t tpt/document .
+# Check JSON or XML documents. Input is mounted read-only, and per-document
+# results are written to /out, which must be a writable mount:
+#   docker run --rm -v "$PWD/docs:/data:ro" -v "$PWD/out:/out" tpt/document \
+#     validate --schema /data/invoice.schema.yaml --policy /data/invoice.policy.yaml \
+#     /data/invoice.xml --out /out
+
+FROM rust:1-bookworm AS build
+WORKDIR /src
+COPY . .
+RUN cargo build --release -p tpt-document
+
+FROM debian:bookworm-slim
+RUN useradd --system --uid 10001 tpt && mkdir /out && chown tpt /out
+COPY --from=build /src/target/release/tpt-document /usr/local/bin/tpt-document
+USER tpt
+WORKDIR /data
+ENTRYPOINT ["tpt-document"]
+CMD ["--help"]

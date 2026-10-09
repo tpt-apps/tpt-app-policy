@@ -1,0 +1,22 @@
+# Container image for TPT Invoice Validator (tpt-invoice).
+#
+# Build:  docker build -f Dockerfile.invoice -t tpt/invoice .
+# Check invoices. Reference files are mounted read-only. The duplicate ledger
+# and per-invoice results are written to /state, which must be a writable mount:
+#   docker run --rm -v "$PWD/invoices:/data:ro" -v "$PWD/state:/state" tpt/invoice \
+#     validate --schema /data/invoice.schema.yaml --policy /data/invoice.policy.yaml \
+#     --suppliers /data/suppliers.json --ledger /state/ledger.jsonl \
+#     /data/invoice-ok.json --out /state
+
+FROM rust:1-bookworm AS build
+WORKDIR /src
+COPY . .
+RUN cargo build --release -p tpt-invoice
+
+FROM debian:bookworm-slim
+RUN useradd --system --uid 10001 tpt && mkdir /state && chown tpt /state
+COPY --from=build /src/target/release/tpt-invoice /usr/local/bin/tpt-invoice
+USER tpt
+WORKDIR /data
+ENTRYPOINT ["tpt-invoice"]
+CMD ["--help"]

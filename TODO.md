@@ -161,7 +161,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Row-level error messages (row, field, reason) as in §9.2
 - [x] HTML report (finish `tpt-report` HTML). `tpt-data validate --html` writes `report.html`: one self-contained page, no scripts, no external links, values escaped, light and dark themes.
 - [x] CLI `tpt-data validate file --schema ...`; `doctor`. Exit codes: 0 all valid, 1 I/O, 2 bad schema/policy/usage, 3 unreadable input, 10 invalid records (outputs still written).
-- [ ] Docker image (not written for `tpt-data` yet)
+- [x] Docker image `tpt/data` (`Dockerfile.data`). Built and tested on Docker Desktop (Windows): `doctor`, and `validate` on the example CSV (exit 10 for invalid rows, outputs written to the mounted `/out`).
 - [~] Docs, examples, landing page, Gumroad listing. **Done:** `docs/DATA_VALIDATOR.md`, `docs/SCHEMA_REFERENCE.md`, examples in `examples/data/`. **Missing:** landing page, Gumroad listing.
 - [~] Windows + Linux release bundle. `scripts/package.sh data` builds the `tpt-data` bundle. **Done:** Windows (Git Bash). **Missing:** Linux, not built here.
 - [ ] Tag **Data Validator 1.0**
@@ -172,7 +172,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Pipeline: parser → schema → policy → validation → report (§10.2). Schema first; the policy runs only on documents that pass.
 - [x] PASS / FAIL / REVIEW outputs with detailed errors. `review` and `approval_required` give REVIEW; `rejected` and any schema or parse error give FAIL.
 - [x] Templates: invoice, PO, supplier, customer, shipping records (`examples/documents/templates/`, with a policy for invoices)
-- [~] CLI `tpt-document`; `doctor`; Docker image. **Done:** `validate` (several files, exit code = worst verdict, `--out` for per-document JSON) and `doctor`. **Missing:** Docker image.
+- [x] CLI `tpt-document`; `doctor`; Docker image `tpt/document` (`Dockerfile.document`). **Done:** `validate` (several files, exit code = worst verdict, `--out` for per-document JSON), `doctor`, and Docker tested on Windows (Docker Desktop).
 - [~] Docs, examples, landing page, Gumroad listing. **Done:** `docs/DOCUMENT_VALIDATOR.md`, examples. **Missing:** landing page, Gumroad listing.
 - [~] Windows + Linux release bundle. `scripts/package.sh document` builds it. **Done:** Windows (Git Bash). **Missing:** Linux, not built here.
 - [ ] HTML report for documents (not started; `tpt-report` has the data-validation page to base it on)
@@ -185,7 +185,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [~] Inputs: JSON, CSV, XML; REST; import/export files. **Done:** JSON and XML. **Missing:** CSV (invoices are one document each, so CSV needs a row-to-invoice mapping decision), REST (the `tpt-policy serve` pattern can be reused).
 - [x] Duplicate detection without a database. Design: a JSON-lines ledger of `supplier tax ID|invoice number`. Accepted invoices are added at once. Documented in `docs/INVOICE_VALIDATOR.md`, including the limit that two concurrent runs can miss a duplicate.
 - [x] Invoice rule/policy templates (`examples/invoices/invoice.policy.yaml`, `invoice.schema.yaml`)
-- [~] CLI `tpt-invoice`; `doctor`; Docker image. **Done:** `validate` (with `--suppliers`, `--ledger`, `--policy`, `--out`) and `doctor`. **Missing:** Docker image.
+- [x] CLI `tpt-invoice`; `doctor`; Docker image `tpt/invoice` (`Dockerfile.invoice`). **Done:** `validate` (with `--suppliers`, `--ledger`, `--policy`, `--out`), `doctor`, and Docker tested on Windows (Docker Desktop), including the duplicate ledger persisting across containers.
 - [~] Docs, landing page, Gumroad listing, bundle. **Done:** `docs/INVOICE_VALIDATOR.md`, examples, `scripts/package.sh invoice` (Windows only). **Missing:** landing page, Gumroad listing, Linux bundle.
 - [ ] Tag **Invoice Validator 1.0**
 
