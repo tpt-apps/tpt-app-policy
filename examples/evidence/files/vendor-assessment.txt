@@ -1,0 +1,3 @@
+Vendor: Example Hosting Ltd
+Assessment date: 2026-08-02
+Result: acceptable, data stays in region

@@ -67,6 +67,19 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 - `check`, `validate` and `doctor`. Steps and exit codes are documented in
   `docs/APPROVAL_ENGINE.md`.
 
+### Compliance Evidence Processor (`tpt-evidence`, in development)
+
+- Evidence index and controls in YAML. Maps evidence to controls, with `max_age_days`
+  and `min_items`. Ages are measured to an `--as-of` date given on the command line.
+- Checks each file: readable, hash matches, JSON, CSV, policy and document validity,
+  and UTF-8 for text and logs.
+- Writes `report.json`, `report.html` and `manifest.json` (SHA-256 of each file, and a
+  hash over the manifest entries). `verify` re-checks the manifest.
+- Every report says the tool does not certify compliance. Signed reports need `tpt-crypto`,
+  which is not in this repository yet.
+- `process`, `verify` and `doctor`. Steps and exit codes are documented in
+  `docs/COMPLIANCE_EVIDENCE.md`.
+
 ### Known limits
 
 - Single-threaded HTTP server. Not intended for direct internet exposure.

@@ -1,0 +1,4 @@
+user,role,last_review,status
+a.brown,admin,2026-09-30,approved
+b.chen,analyst,2026-09-30,approved
+c.diaz,finance,2026-09-30,revoked

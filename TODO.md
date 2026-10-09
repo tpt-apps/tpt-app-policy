@@ -220,13 +220,13 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ## Phase 9 — Compliance → TPT Compliance Evidence Processor
 
-- [ ] Inputs: JSON, CSV, text, logs, policy files, evidence metadata
-- [ ] Evidence inventory, control/evidence mapping, validation report
-- [ ] Hashing + manifest + signed/verified reports via tpt-crypto
-- [ ] JSON + HTML reports
-- [ ] Explicit "does not certify compliance" disclaimer (§15.5)
-- [ ] CLI `tpt-evidence`; `doctor`
-- [ ] Docs, landing page, Gumroad listing, bundle
+- [x] Inputs: JSON, CSV, text, logs, policy files, evidence metadata. Documents (XML, JSON) use the tpt-document rules.
+- [x] Evidence inventory, control/evidence mapping, validation report. Controls are covered, stale or gap.
+- [~] Hashing + manifest done (SHA-256 per file, manifest hash, `verify`). **Not done:** signed/verified reports, which need `tpt-crypto`.
+- [x] JSON + HTML reports
+- [x] Explicit "does not certify compliance" disclaimer (§15.5), on every report
+- [x] CLI `tpt-evidence` with `process`, `verify` and `doctor`
+- [~] Docs, examples, bundle. **Done:** `docs/COMPLIANCE_EVIDENCE.md`, `examples/evidence/`, `scripts/package.sh evidence` (Windows). **Missing:** landing page, Gumroad listing, Linux bundle.
 - [ ] Tag **Compliance Evidence Processor 1.0**
 
 ## Phase 10 — AI → TPT AI Action Guard

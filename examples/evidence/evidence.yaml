@@ -1,0 +1,41 @@
+# Evidence for an internal controls review. Paths are relative to this file.
+name: internal-controls-q3-2026
+items:
+  - id: access-review-q3
+    file: files/access-review.csv
+    controls: [AC-2]
+    collected: 2026-09-30
+    owner: IT Security
+    sha256: 7f1627749667228adfae42ae66a0793b8914aba75cb7657b3ef88363fdb9db31
+    description: Quarterly access review, signed off by the control owner
+
+  - id: change-ticket-1042
+    file: files/change-ticket.json
+    controls: [CM-3]
+    collected: 2026-09-15
+    owner: Operations
+
+  - id: backup-log-april
+    file: files/backup-log.log
+    controls: [CP-9]
+    collected: 2026-04-08
+    owner: Operations
+    description: Backup job log. Older than the quarter, so it is stale
+
+  - id: password-policy
+    file: files/password-policy.yaml
+    controls: [IA-5]
+    collected: 2026-08-20
+    owner: IT Security
+
+  - id: vendor-assessment
+    file: files/vendor-assessment.txt
+    controls: [SA-9]
+    collected: 2026-08-02
+    owner: Procurement
+
+  - id: incident-2026-07
+    file: files/incident-2026-07.json
+    controls: [IR-4, AC-2]
+    collected: 2026-07-19
+    owner: Security Operations

@@ -496,6 +496,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tpt-evidence"
+version = "2026.1.0"
+dependencies = [
+ "clap",
+ "csv",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "tpt-commercial-cli",
+ "tpt-document",
+ "tpt-policy-core",
+ "tpt-report",
+]
+
+[[package]]
 name = "tpt-invoice"
 version = "2026.1.0"
 dependencies = [

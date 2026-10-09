@@ -1,0 +1,24 @@
+# Controls the review checks. Ages are measured from the collection date to --as-of.
+framework: Internal Controls Baseline (example)
+controls:
+  - id: AC-2
+    title: Account management
+    max_age_days: 120
+
+  - id: CM-3
+    title: Configuration change control
+    max_age_days: 180
+
+  - id: CP-9
+    title: System backup
+    max_age_days: 90
+
+  - id: IA-5
+    title: Authenticator management
+    max_age_days: 365
+
+  - id: IR-4
+    title: Incident handling
+
+  - id: SA-9
+    title: External system services
