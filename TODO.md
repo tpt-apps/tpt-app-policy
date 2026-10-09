@@ -195,7 +195,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Transforms: rename, delete, select, trim, case, type conversion, defaults, conditional values, combine/split, map, filter, calculated fields. Field names are dotted paths. Covered by unit tests.
 - [x] Formats: CSV, JSON, JSONL (in and out, with `--to`)
 - [x] CLI `tpt-transform` with `run`, `check` and `doctor`
-- [~] Docs, examples, landing page, Gumroad listing, bundle. **Done:** `docs/DATA_TRANSFORMER.md`, `examples/transform/` with golden output, `scripts/package.sh transform`. **Missing:** landing page, Gumroad listing; bundle not built yet.
+- [~] Docs, examples, landing page, Gumroad listing, bundle. **Done:** `docs/DATA_TRANSFORMER.md`, `examples/transform/` with golden output, `scripts/package.sh transform`. **Missing:** landing page, Gumroad listing. Bundle built and unpacked on Windows, and on Linux in a container.
 - [ ] Tag **Data Transformer 1.0**
 - [ ] (Later) joins, lookups, reference tables, large-file streaming
 
