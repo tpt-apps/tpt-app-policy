@@ -35,7 +35,7 @@ Source: `spec.txt` (section refs in parentheses). Tick boxes as you go: `- [x]`.
 - [x] Create crates: `tpt-policy-core`, `tpt-schema`, `tpt-report`, `tpt-commercial-cli`, `tpt-app-policy`
 - [x] CI (build + test + clippy + fmt) for Windows and Linux (workflow written in `.github/workflows/ci.yml`; not yet run on GitHub)
 - [x] Clone/audit TPT-Solutions repos: tpt-primitives, tpt-capsec, tpt-wasm, tpt-runtime, tpt-crypto, tpt-mcpbox (findings in `docs/ARCHITECTURE.md`)
-- [ ] Define the narrow stable dependency layer (§33); record API gaps (draft in ARCHITECTURE.md; needs your decision on tpt-runtime-policy overlap)
+- [x] Define the narrow stable dependency layer (§33). Decided: TPT foundation crates are pinned once in the workspace `Cargo.toml`. `tpt-runtime-policy` is not used (see Phase 2); only `tpt-runtime-core` (lifecycle states, errors, usage) is, since it has no policy logic of its own and its dependencies are small (serde, thiserror, time, uuid).
 - [x] Pick workspace dependencies (serde, serde_yaml, serde_json, clap, thiserror, ...) (declared in `Cargo.toml`, used from Phase 1)
 - [x] Write `docs/ARCHITECTURE.md` (JSON boundary, layering, what NOT to build §42)
 
@@ -54,7 +54,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Decision model + severity precedence merge
 - [x] Merged outputs: approvers, requirements, warnings (`requirement` and `warning` on a rule; `approver` as text or `{role: ...}`)
 - [x] Explanation model: matched rules with descriptions, failed rules with the first failed check
-- [~] Policy versioning: version is recorded in every output, validated as numeric `MAJOR[.MINOR[.PATCH]]`, and shown as `name@version`. Tests in `crates/tpt-policy-core/tests/versioning.rs`. **Not done:** checking the policy version against the app version (§37). The spec gives no rule for it (no compatibility range or engine-version field in the policy format), so it needs a decision first
+- [x] Policy versioning: version is recorded in every output, validated as numeric `MAJOR[.MINOR[.PATCH]]`, and shown as `name@version`. Tests in `crates/tpt-policy-core/tests/versioning.rs`. **Compatibility:** the author's `version` is informational and is not checked against the app version. The compatibility rule is a separate integer `format:` (default 1, `POLICY_FORMAT` in `tpt-policy-core`). The engine refuses a higher format with a message to upgrade. Tests in `crates/tpt-policy-core/tests/format.rs`. Documented in `docs/POLICY_REFERENCE.md`. The output does not add a format field, so existing golden outputs are unchanged. No version-range syntax until a second format exists.
 - [x] Determinism: no clock or randomness in evaluation; repeated runs are tested to be byte-identical
 - [x] Validation errors with what / where / why / fix (§29.4)
 - [x] Inline `tests:` block (name / input / expect), with optional `matched_rules` (§36)
@@ -95,11 +95,11 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ## Phase 2 — Production Runtime → TPT App Policy 1.0
 
-- [ ] Integrate tpt-primitives (types/IDs/deterministic representations)
-- [ ] Integrate tpt-capsec (capability model)
-- [ ] Integrate tpt-runtime (lifecycle, resource limits)
-- [~] Integrate tpt-wasm (WASM sandbox). **Checked:** tpt-wasm is MIT OR Apache-2.0. Its only third-party dependency is `wast` (Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT), used only by `tpt-wasm-spec`, a spec test harness. So a product that does not depend on `tpt-wasm-spec` picks up no third-party licence issue. Re-run `cargo deny` on the final dependency tree before embedding.
-- [~] Resource limits (time, memory, input size). **Done:** input size: 10 MB in the CLI, 1 MB over HTTP. **Not needed yet:** time limits, since evaluation is linear in rules and input size and has no loops or I/O. Memory follows from the input size limit.
+- [x] Integrate tpt-primitives (types/IDs/deterministic representations). **Done:** `tpt-secure-run` gives each module a content-addressed `module_id` (`tpt_primitives::computation::artifact_of_content`). **Not changed:** the policy `input_sha256` still uses `sha2` directly. Its output is the same SHA-256 hex, so moving it would only churn code.
+- [x] Integrate tpt-capsec (capability model). **Done:** `tpt-ai-guard` checks scopes with `tpt-capsec-core`, and `tpt-secure-run` mints a `FsReadToken` from a `RootCapability` for every granted file read. The shared pin lives in the workspace `Cargo.toml`. **Not used:** `tpt-capsec`'s wrapper crate, because it is not a dependency. Read the note in `docs/SECURE_SCRIPT_RUNNER.md`: the token is a scope convention, not an OS barrier.
+- [x] Integrate tpt-runtime (lifecycle, resource limits). **Done:** `tpt-secure-run` moves each run through the `tpt-runtime-core` `WorkloadState` table and rejects any step it does not permit. **Not used:** `tpt-runtime-policy`, to keep the decision above (the commercial core stays independent).
+- [x] Integrate tpt-wasm (WASM sandbox). **Done:** `tpt-secure-run` runs scripts on `tpt-wasm-runtime` in deterministic mode, with the step, memory and call-depth limits from its manifest. Behaviour is tested in `crates/tpt-secure-run/tests/run.rs`. Earlier notes: **Checked:** tpt-wasm is MIT OR Apache-2.0. Its only third-party dependency is `wast` (Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT), used only by `tpt-wasm-spec`, a spec test harness. So a product that does not depend on `tpt-wasm-spec` picks up no third-party licence issue. Re-run `cargo deny` on the final dependency tree before embedding.
+- [x] Resource limits (time, memory, input size). **Done:** input size: 10 MB in the CLI, 1 MB over HTTP. Time, for scripts: an instruction-step budget (`max_steps` in the manifest), enforced by the engine. Memory: `max_memory_pages`. Policy evaluation itself is linear and needs no time limit.
 - [x] Deterministic mode (always on: no clock, no randomness; tested byte-identical across runs)
 - [x] Expose policy evaluation as an embeddable WASM module (§8.4). `crates/tpt-policy-wasm`: plain C ABI, no imports, same JSON as `check`. Built for wasm32 (about 470 KB, not size-optimised). Tested with `node crates/tpt-policy-wasm/js/smoke.mjs`, which compares the expense example with the CLI's golden output.
 - [x] REST: `tpt-policy serve`, `POST /v1/evaluate` (plus `GET /healthz`). Localhost by default, optional bearer token, 1 MB body limit. Tested over real sockets. Single-threaded.
@@ -120,10 +120,10 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] CLI_REFERENCE (in `docs/`)
 - [x] POLICY_REFERENCE (in `docs/`)
 - [x] SCHEMA_REFERENCE (in `docs/`)
-- [~] INTEGRATION (in `docs/`). **Done:** generic JSON-in/decision-out pattern with HTTP and CLI examples. **Missing:** a real ERP example, which needs a chosen ERP and sample exports.
+- [x] INTEGRATION (in `docs/`). **Done:** generic JSON-in/decision-out pattern with HTTP and CLI examples. **ERP:** decided not to name a vendor. §42 rules out ERP connectors, and a vendor example needs that vendor's real export format. `examples/erp-generic/` is a purchase-order CSV with invented columns, a schema, a policy, and a run that checks both. Name a real ERP only when a customer asks and supplies a sample export.
 - [x] TROUBLESHOOTING (in `docs/`)
 - [x] SECURITY (in `docs/`)
-- [x] LICENCE: dual MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`). Copyright holder line in `LICENSE-MIT` to confirm.
+- [x] LICENCE: dual MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`). Copyright holder confirmed as TPT Solutions in `LICENSE-MIT`.
 - [~] CHANGELOG (Unreleased section exists; needs a tagged version)
 
 ### Commercial wrapper
@@ -212,12 +212,12 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ## Phase 8 — Security → TPT Secure Script Runner
 
-- [ ] Permission manifest (filesystem read/write, network, environment, subprocess) (§12.2)
-- [ ] WASM execution via tpt-wasm + tpt-capsec + tpt-runtime
-- [ ] Resource limits, deterministic mode, execution logs, exit status
-- [ ] Decide on optional tpt-archon / tpt-nexus hardened process boundary
-- [ ] CLI `tpt-secure-run`; `doctor`
-- [ ] Docs, security docs, examples (incl. denied-capability demos), landing page, Gumroad listing, bundle
+- [~] Permission manifest (filesystem read/write, network, environment, subprocess) (§12.2). **Done:** filesystem read and write, by name, with unknown keys rejected. **Not done:** network, environment and subprocess. Those keys are recognised and refused with a message, so the runner fails closed. Each needs its own host import and tests before it can be granted.
+- [x] WASM execution via tpt-wasm + tpt-capsec + tpt-runtime. Behaviour tests: `crates/tpt-secure-run/tests/run.rs` (14 cases, including denial, limits, trap, invalid module and output-only-on-success).
+- [x] Resource limits, deterministic mode, execution logs, exit status. Steps, memory, call depth, file size, open files and log length are capped. The report has no timestamps.
+- [x] Decide on optional tpt-archon / tpt-nexus hardened process boundary. **Decided: defer.** The v1 runner has no native subprocess support, so there is nothing for a process boundary to contain yet. Revisit when subprocess grants are added (the subprocess grant is the first thing that needs a separate process).
+- [x] CLI `tpt-secure-run` (`run`, `validate`, `doctor`)
+- [~] Docs, security docs, examples (incl. denied-capability demos), landing page, Gumroad listing, bundle. **Done:** `docs/SECURE_SCRIPT_RUNNER.md` (including the security limits), `examples/secure-run/` (a working script and two denial demos), `scripts/package.sh secure-run` (Windows, built and checked). **Missing:** landing page, Gumroad listing, and a Linux bundle.
 - [ ] Tag **Secure Script Runner 1.0**
 
 ## Phase 9 — Compliance → TPT Compliance Evidence Processor

@@ -10,6 +10,8 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 
 ### Added
 
+- Policy `format:` (a whole number, default 1). A policy declaring a format newer than the engine's is refused with a message to upgrade. Documented in `docs/POLICY_REFERENCE.md`.
+- `examples/erp-generic/`: a generic purchase-order CSV with a schema and policy, using invented column names. Not any vendor's format.
 - Policy versions are validated (`MAJOR`, `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`, numbers only). An unquoted decimal such as `1.10` is rejected with a fix.
 - `name@version` policy label, shown by `check`/`explain` and `validate`.
 - Policy errors give the line of the problem, e.g. `rules[0].when.amount.greater_than (line 6)`.
@@ -108,7 +110,25 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
   the action.
 - `check`, `validate` and `doctor`. Steps and exit codes are documented in
   `docs/AI_ACTION_GUARD.md`.
-- Not yet: MCP gating (`tpt-mcpbox`), capability security (`tpt-capsec`), REST, Docker.
+- Not yet: MCP gating (`tpt-mcpbox`), or issuing capability tokens.
+
+### Secure Script Runner (`tpt-secure-run`, in development)
+
+- Runs a WebAssembly script under a YAML permission manifest. A script has no file access
+  unless the manifest grants it, and a script that imports anything ungranted is refused
+  before it runs (exit 7).
+- File access is by manifest position (handle), never by a path from the script. Reads go
+  through `tpt-capsec` tokens scoped to the granted path. Output is written only when the
+  script returns 0.
+- Step, memory, call-depth, file-size and log limits. The engine is deterministic, and the
+  JSON report has no timestamps.
+- Lifecycle follows the `tpt-runtime-core` workload states, and each step is checked against
+  its transition table.
+- `net_connect`, `process_spawn` and `env` are refused with a message, not ignored.
+- `run`, `validate` (manifest, and optionally a module against it) and `doctor`. Steps and exit
+  codes are documented in `docs/SECURE_SCRIPT_RUNNER.md`.
+- Not yet: network, environment or subprocess access; string arguments to the host; a hardened
+  process boundary.
 
 ### Known limits
 
