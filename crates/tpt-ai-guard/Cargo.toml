@@ -21,3 +21,8 @@ clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true
+tiny_http.workspace = true
+
+# TPT-Solutions repos are not in this workspace. Pinned to a commit because
+# neither repo has tags. Bump the rev deliberately, after reading its changelog.
+tpt-capsec-core = { git = "https://github.com/TPT-Solutions/tpt-capsec", rev = "799eeff4a4acd155c112594d62fc140e10038bf3" }

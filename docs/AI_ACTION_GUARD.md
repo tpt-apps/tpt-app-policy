@@ -13,6 +13,7 @@ ALLOW. For REQUIRE_APPROVAL, your system asks a person first.
 tpt-ai-guard check request.json --policy customer-actions.policy.yaml
 tpt-ai-guard check request.json --policy customer-actions.policy.yaml --format text
 tpt-ai-guard validate --policy customer-actions.policy.yaml
+tpt-ai-guard serve --policy customer-actions.policy.yaml --grants grants.yaml
 tpt-ai-guard doctor
 ```
 
@@ -40,6 +41,24 @@ A JSON object with a string `action`. Other fields are the details the rules tes
 ```json
 { "action": "refund_customer", "amount": 7500, "customer": "C-1009" }
 ```
+
+## Granted resources (optional)
+
+Pass `--grants grants.yaml` to limit the resources a request may name. The file
+lists what the agent was delegated, using `tpt-capsec` scope rules:
+
+```yaml
+fs_read:        # the request's "path" must be inside one of these folders
+  - "C:/tpt/exports"
+net_connect:    # the request's "host" must match one of these (or a subdomain)
+  - "api.example.com"
+process_spawn:  # the request's "program" must be one of these names
+  - "git"
+```
+
+A named resource outside its list is **DENY**, even when a rule allows the
+action. The reason names the resource. A request that names no resource is not
+affected. Without `--grants`, named resources are not checked.
 
 ## Policy
 
@@ -87,6 +106,34 @@ then defaults to `action-policy`.
 A request with no `amount` does not match a rule that tests `amount`. So a refund
 with no amount is denied under the example policy.
 
+## HTTP server
+
+`tpt-ai-guard serve` answers decisions over HTTP, for agents written in any language.
+It listens on `127.0.0.1:8080` unless you pass `--listen`.
+
+| Endpoint | Body | Reply |
+|---|---|---|
+| `POST /v1/decide` | the action request JSON | the verdict JSON (same as `check`) |
+| `GET /healthz` | none | `{"status": "ok"}` |
+
+If `TPT_AI_GUARD_TOKEN` is set, `POST /v1/decide` needs
+`Authorization: Bearer <token>`. The server warns at start if it listens beyond
+localhost without a token. Bodies over 1 MB are refused. Requests are handled one
+at a time.
+
+```text
+curl -X POST -H "Authorization: Bearer $TPT_AI_GUARD_TOKEN"   -d '{"action":"refund_customer","amount":7500}' http://127.0.0.1:8080/v1/decide
+```
+
+## Docker
+
+```text
+docker build -f Dockerfile.ai-guard -t tpt/ai-guard .
+```
+
+The image runs as a non-root user and has `tpt-ai-guard` as its entry point.
+Mount policy and request files read-only under `/data`.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -112,12 +159,11 @@ request are not written to the output. Nothing leaves the machine.
 ## What this version does not do
 
 - **MCP or tool gating.** The guard does not sit in front of MCP servers or
-  tool calls. That integration needs `tpt-mcpbox`, which is not in this
-  repository yet. For now, your code calls the guard and then calls the tool.
-- **Capability security.** Tokens or capabilities that limit what an agent can
-  reach need `tpt-capsec`, which is not in this repository yet.
-- **A server.** There is no REST interface yet. Use the CLI, or call the guard's
-  Rust library from your code.
+  tool calls. The pinned `tpt-mcpbox-policy` crate exposes only a version
+  constant, so there is no gating API to call yet. For now, your code calls the
+  guard and then calls the tool.
+- **Capability tokens.** `--grants` checks scopes from `tpt-capsec-core`, but
+  it does not issue or pass on capability tokens. The caller still runs the
+  action.
 - **Approval workflow.** REQUIRE_APPROVAL says that approval is needed. It does
   not send the request to anyone, or record who approved it.
-- **Docker.** No image yet.

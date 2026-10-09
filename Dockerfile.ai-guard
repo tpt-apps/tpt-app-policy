@@ -1,0 +1,24 @@
+# Container image for TPT AI Action Guard (tpt-ai-guard).
+#
+# Build:  docker build -f Dockerfile.ai-guard -t tpt/ai-guard .
+# Check one request. Policy and request files are mounted read-only:
+#   docker run --rm -v "$PWD/ai-guard:/data:ro" tpt/ai-guard \
+#     check /data/requests/refund-large.json --policy /data/customer-actions.policy.yaml
+# Serve decisions over HTTP. Listen on all interfaces inside the container,
+# and set a token so callers must authenticate:
+#   docker run --rm -p 127.0.0.1:8080:8080 -e TPT_AI_GUARD_TOKEN=... \
+#     -v "$PWD/ai-guard:/data:ro" tpt/ai-guard \
+#     serve --policy /data/customer-actions.policy.yaml --listen 0.0.0.0:8080
+
+FROM rust:1-bookworm AS build
+WORKDIR /src
+COPY . .
+RUN cargo build --release -p tpt-ai-guard
+
+FROM debian:bookworm-slim
+RUN useradd --system --uid 10001 tpt
+COPY --from=build /src/target/release/tpt-ai-guard /usr/local/bin/tpt-ai-guard
+USER tpt
+WORKDIR /data
+ENTRYPOINT ["tpt-ai-guard"]
+CMD ["--help"]

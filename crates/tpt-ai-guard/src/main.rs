@@ -20,8 +20,13 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use serde_json::Value;
-use tpt_ai_guard::{compile, decide, parse_action_policy, ActionPolicy, GUARD_VERSION};
+use tpt_ai_guard::{
+    compile, decide, decide_with_grants, parse_action_policy, parse_grants, ActionPolicy, Grants,
+    GUARD_VERSION,
+};
 use tpt_commercial_cli::exit;
+
+mod serve;
 
 #[derive(Parser)]
 #[command(
@@ -43,6 +48,10 @@ enum Command {
         /// Action policy (YAML)
         #[arg(long, value_name = "FILE")]
         policy: PathBuf,
+        /// Resources delegated to the agent (YAML: fs_read, net_connect, process_spawn).
+        /// Without this, resources named in the request are not checked.
+        #[arg(long, value_name = "FILE")]
+        grants: Option<PathBuf>,
         /// Output format
         #[arg(long, value_enum, default_value_t = Format::Json)]
         format: Format,
@@ -52,6 +61,22 @@ enum Command {
         /// Action policy (YAML)
         #[arg(long, value_name = "FILE")]
         policy: PathBuf,
+    },
+    /// Serve decisions over HTTP (POST /v1/decide)
+    Serve {
+        /// Action policy (YAML)
+        #[arg(long, value_name = "FILE")]
+        policy: PathBuf,
+        /// Resources delegated to the agent (YAML), as for `check --grants`
+        #[arg(long, value_name = "FILE")]
+        grants: Option<PathBuf>,
+        /// Address to listen on. Defaults to localhost only.
+        #[arg(long, default_value = "127.0.0.1:8080")]
+        listen: String,
+        /// Bearer token required on POST /v1/decide. Read from TPT_AI_GUARD_TOKEN
+        /// so it does not appear in shell history.
+        #[arg(long, env = "TPT_AI_GUARD_TOKEN", hide_env_values = true)]
+        token: Option<String>,
     },
     /// Check that this install works
     Doctor,
@@ -68,9 +93,16 @@ fn main() -> ExitCode {
         Command::Check {
             request,
             policy,
+            grants,
             format,
-        } => check(&request, &policy, format),
+        } => check(&request, &policy, grants.as_deref(), format),
         Command::Validate { policy } => validate(&policy),
+        Command::Serve {
+            policy,
+            grants,
+            listen,
+            token,
+        } => serve_guard(&policy, grants.as_deref(), &listen, token),
         Command::Doctor => doctor(),
     };
     ExitCode::from(code)
@@ -93,9 +125,71 @@ fn load_policy(path: &Path) -> Result<ActionPolicy, u8> {
     })
 }
 
-fn check(request_path: &Path, policy_path: &Path, format: Format) -> u8 {
+fn serve_guard(
+    policy_path: &Path,
+    grants_path: Option<&Path>,
+    listen: &str,
+    token: Option<String>,
+) -> u8 {
     let policy = match load_policy(policy_path) {
         Ok(policy) => policy,
+        Err(code) => return code,
+    };
+    if let Err(why) = compile(&policy) {
+        eprintln!("error: the policy does not compile\n  why: {why}");
+        return exit::INVALID_POLICY;
+    }
+    let grants = match grants_path.map(load_grants).transpose() {
+        Ok(grants) => grants,
+        Err(code) => return code,
+    };
+    let is_loopback = {
+        let host = listen.rsplit_once(':').map_or(listen, |(host, _)| host);
+        matches!(host, "127.0.0.1" | "localhost" | "[::1]" | "::1")
+    };
+    if token.is_none() && !is_loopback {
+        eprintln!(
+            "warning: listening on {listen} without a token; anyone who can reach this address can ask for decisions. Set TPT_AI_GUARD_TOKEN or listen on 127.0.0.1."
+        );
+    }
+    match serve::serve(policy, grants, listen, token) {
+        Ok(()) => exit::SUCCESS,
+        Err(e) => {
+            eprintln!("error: cannot serve on {listen}: {e}\n  fix: check the address is valid and the port is free");
+            exit::IO_ERROR
+        }
+    }
+}
+
+fn load_grants(path: &Path) -> Result<Grants, u8> {
+    let text = fs::read_to_string(path).map_err(|e| {
+        eprintln!(
+            "error: cannot read grants '{}': {e}\n  fix: check the path to the grants file",
+            path.display()
+        );
+        exit::IO_ERROR
+    })?;
+    parse_grants(&text).map_err(|why| {
+        eprintln!(
+            "error: invalid grants '{}'\n  why: {why}\n  fix: use the keys fs_read, net_connect and process_spawn, each a list",
+            path.display()
+        );
+        exit::INVALID_POLICY
+    })
+}
+
+fn check(
+    request_path: &Path,
+    policy_path: &Path,
+    grants_path: Option<&Path>,
+    format: Format,
+) -> u8 {
+    let policy = match load_policy(policy_path) {
+        Ok(policy) => policy,
+        Err(code) => return code,
+    };
+    let grants = match grants_path.map(load_grants).transpose() {
+        Ok(grants) => grants,
         Err(code) => return code,
     };
     let text = match fs::read_to_string(request_path) {
@@ -125,7 +219,7 @@ fn check(request_path: &Path, policy_path: &Path, format: Format) -> u8 {
             return exit::INVALID_INPUT;
         }
     };
-    let verdict = match decide(&policy, &request) {
+    let verdict = match decide_with_grants(&policy, grants.as_ref(), &request) {
         Ok(verdict) => verdict,
         Err(why) => {
             eprintln!("error: {why}");

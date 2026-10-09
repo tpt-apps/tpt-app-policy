@@ -9,9 +9,11 @@
 //! action that no rule covers is denied.
 
 use std::collections::BTreeSet;
+use std::path::Path;
 
 use serde::Deserialize;
 use serde_json::{json, Map, Value};
+use tpt_capsec_core::{permits_host, permits_path, permits_program};
 use tpt_policy_core::{evaluate, parse_policy, Decision, Evaluation, Policy};
 
 /// Version of this crate, recorded in results.
@@ -218,8 +220,75 @@ pub fn compile(policy: &ActionPolicy) -> Result<Policy, String> {
     parse_policy(&text).map_err(|e| format!("{}: {}", e.what, e.why))
 }
 
+/// Resources the caller has delegated to the agent (tpt-capsec scopes).
+///
+/// A request that names a resource is checked against these lists: `path`
+/// against `fs_read`, `host` against `net_connect`, `program` against
+/// `process_spawn`. A resource outside its list is denied, whatever the rules
+/// say. A list that is missing or empty grants nothing, so the request is denied
+/// if it names that kind of resource.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Grants {
+    #[serde(default)]
+    pub fs_read: Vec<String>,
+    #[serde(default)]
+    pub net_connect: Vec<String>,
+    #[serde(default)]
+    pub process_spawn: Vec<String>,
+}
+
+/// Parse a grants file (YAML).
+pub fn parse_grants(text: &str) -> Result<Grants, String> {
+    serde_yaml::from_str(text).map_err(|e| e.to_string())
+}
+
+/// The first resource in the request that the grants do not cover, as a reason.
+fn outside_grants(grants: &Grants, request: &Value) -> Option<String> {
+    if let Some(path) = request.get("path").and_then(Value::as_str) {
+        let allowed = grants
+            .fs_read
+            .iter()
+            .any(|scope| permits_path(Path::new(scope), Path::new(path)));
+        if !allowed {
+            return Some(format!(
+                "path '{path}' is outside the granted fs_read scope"
+            ));
+        }
+    }
+    if let Some(host) = request.get("host").and_then(Value::as_str) {
+        let allowed = grants
+            .net_connect
+            .iter()
+            .any(|scope| permits_host(scope, host));
+        if !allowed {
+            return Some(format!(
+                "host '{host}' is outside the granted net_connect scope"
+            ));
+        }
+    }
+    if let Some(program) = request.get("program").and_then(Value::as_str) {
+        if !permits_program(&grants.process_spawn, program) {
+            return Some(format!(
+                "program '{program}' is outside the granted process_spawn scope"
+            ));
+        }
+    }
+    None
+}
+
 /// Decide one action request. The request must be a JSON object with a string `action`.
 pub fn decide(policy: &ActionPolicy, request: &Value) -> Result<Verdict, String> {
+    decide_with_grants(policy, None, request)
+}
+
+/// Like [`decide`], and also checks the resources the request names against
+/// `grants`. Any resource outside the grants makes the verdict DENY.
+pub fn decide_with_grants(
+    policy: &ActionPolicy,
+    grants: Option<&Grants>,
+    request: &Value,
+) -> Result<Verdict, String> {
     let action = request
         .get("action")
         .and_then(Value::as_str)
@@ -246,7 +315,7 @@ pub fn decide(policy: &ActionPolicy, request: &Value) -> Result<Verdict, String>
     } else {
         unique(reasons).join("; ")
     };
-    Ok(Verdict {
+    let mut verdict = Verdict {
         decision,
         reason,
         action,
@@ -256,7 +325,13 @@ pub fn decide(policy: &ActionPolicy, request: &Value) -> Result<Verdict, String>
             version: evaluation.policy.version.clone(),
         },
         input_sha256: evaluation.input_sha256.clone(),
-    })
+    };
+    // A resource outside the delegated scope overrides any allow.
+    if let Some(why) = grants.and_then(|g| outside_grants(g, request)) {
+        verdict.decision = "DENY";
+        verdict.reason = why;
+    }
+    Ok(verdict)
 }
 
 fn unique(items: Vec<String>) -> Vec<String> {

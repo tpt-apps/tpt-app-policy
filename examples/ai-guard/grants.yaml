@@ -1,0 +1,8 @@
+# Resources delegated to the agent. A request that names a path, host or
+# program outside these lists is denied, even if a rule would allow it.
+fs_read:
+  - "C:/tpt/exports"
+net_connect:
+  - "api.example.com"
+process_spawn:
+  - "git"

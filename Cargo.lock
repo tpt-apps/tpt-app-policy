@@ -435,6 +435,8 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "tiny_http",
+ "tpt-capsec-core",
  "tpt-commercial-cli",
  "tpt-policy-core",
 ]
@@ -463,6 +465,11 @@ dependencies = [
  "tpt-policy-core",
  "tpt-report",
 ]
+
+[[package]]
+name = "tpt-capsec-core"
+version = "0.1.0"
+source = "git+https://github.com/TPT-Solutions/tpt-capsec?rev=799eeff4a4acd155c112594d62fc140e10038bf3#799eeff4a4acd155c112594d62fc140e10038bf3"
 
 [[package]]
 name = "tpt-commercial-cli"

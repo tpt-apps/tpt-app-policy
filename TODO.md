@@ -12,6 +12,8 @@ Source: `spec.txt` (section refs in parentheses). Tick boxes as you go: `- [x]`.
 - CLI: per-product binaries on a shared framework (`tpt-policy`, `tpt-data`, ...). Each has its own `doctor`.
 - REST: `serve` subcommand inside `tpt-policy`, `POST /v1/evaluate`, localhost by default.
 - Platforms: Windows x64 + Linux x64 only at launch (§24).
+- AI Action Guard policies stay on `tpt-policy-core`. `tpt-mcpbox-policy` is used only for MCP tool gating, not as the policy format, once it has a gating API.
+- TPT-Solutions git dependencies (`tpt-capsec-core`) stay pinned to their current commit. When to bump them is deferred.
 
 ## Open decisions (default shown; change if wrong)
 
@@ -126,11 +128,11 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 
 ### Commercial wrapper
 - [x] Licence (§26) replaced by dual MIT OR Apache-2.0. A separate commercial licence is no longer planned; the paid offer is the Gumroad product (see `docs/GUMROAD.md`).
-- [ ] Support-boundary statement (§43)
-- [ ] Privacy statement: no data leaves the machine (§39)
+- [x] Support-boundary statement (§43) — `docs/SUPPORT.md` ("What support covers")
+- [x] Privacy statement: no data leaves the machine (§39) — `docs/PRIVACY.md`, verified by checking that no outbound HTTP client crate is in the dependency tree
 - [ ] Landing page (§31)
 - [ ] Gumroad listing: one product, $49 suggested (§27). Full setup in `docs/GUMROAD.md`. Still to do: set the price in Gumroad, the refund wording, and the checklist there.
-- [ ] Policy templates/examples (purchase order, expense, etc.)
+- [x] Policy templates/examples (purchase order, expense, etc.). `examples/templates/purchase-order.policy.yaml` (with inline tests, passing), plus `examples/expense/`, `examples/purchasing/`, `examples/invoices/` and `examples/approval/`.
 
 ### 1.0 acceptance criteria (§47) — do not ship until all pass
 - [ ] Windows install works
@@ -232,9 +234,10 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 ## Phase 10 — AI → TPT AI Action Guard
 
 - [x] Action-request schema + policy (ALLOW / DENY / REQUIRE_APPROVAL). Most restrictive match wins; no match is DENY.
-- [ ] tpt-mcpbox integration for MCP/tool gating. **Blocked:** tpt-mcpbox is not in this repository.
-- [ ] Capability security via tpt-capsec. **Blocked:** tpt-capsec is not in this repository.
-- [~] CLI `tpt-ai-guard` with `check`, `validate` and `doctor`. **Not done:** REST, Docker image.
+- [ ] tpt-mcpbox integration for MCP/tool gating. **Blocked:** the pinned `tpt-mcpbox-policy` (`0f87f0f`) exposes only a `VERSION` constant, with no gating API. Dependency removed until a gating API exists.
+- [~] Capability security via tpt-capsec. **Done:** `--grants` checks `path`, `host` and `program` against tpt-capsec scopes (`fs_read`, `net_connect`, `process_spawn`); tests in `crates/tpt-ai-guard/tests/grants.rs`. **Missing:** issuing or passing capability tokens.
+- [x] CLI `tpt-ai-guard` with `check`, `validate`, `serve` and `doctor`. `serve` is `POST /v1/decide` plus `GET /healthz`, with optional bearer token (`TPT_AI_GUARD_TOKEN`), localhost by default, 1 MB body limit. Tested over real sockets.
+- [x] Docker image `tpt/ai-guard` (`Dockerfile.ai-guard`). Built and tested on Docker Desktop (Windows): `doctor`, `check` (exit 10 on the large refund), and `serve` with healthz and bearer auth.
 - [~] Docs, examples, bundle. **Done:** `docs/AI_ACTION_GUARD.md`, `examples/ai-guard/`, `scripts/package.sh ai-guard` (Windows). **Missing:** landing page, Gumroad listing. Linux bundle built in a container.
 - [ ] Tag **AI Action Guard 1.0**
 

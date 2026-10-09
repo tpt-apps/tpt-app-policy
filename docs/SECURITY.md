@@ -1,7 +1,8 @@
 # Security
 
 This document describes how TPT App Policy handles data and what you need to
-configure. It is not a certification or an audit.
+configure. It is not a certification or an audit. For the short buyer-facing
+version, see [PRIVACY.md](PRIVACY.md).
 
 ## What it does with your data
 

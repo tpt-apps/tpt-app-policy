@@ -1,0 +1,76 @@
+# Template: purchase orders by value. Copy it and change the limits and approvers
+# to match your own approval chart. Run `tpt-policy test` after every change.
+#
+# Input fields used: amount (number), currency (text), buyer.department (text).
+policy: purchase-order
+version: "1.0.0"
+
+rules:
+  - id: po-small
+    description: Purchase orders under $1,000 are approved automatically
+    when:
+      amount:
+        lt: 1000
+    then:
+      decision: approved
+
+  - id: po-manager
+    description: Purchase orders from $1,000 to under $10,000 need a department manager
+    when:
+      amount:
+        gte: 1000
+        lt: 10000
+    then:
+      decision: approval_required
+      approver: manager
+
+  - id: po-director
+    description: Purchase orders of $10,000 or more need a director
+    when:
+      amount:
+        gte: 10000
+    then:
+      decision: approval_required
+      approver: director
+
+  - id: po-foreign-currency
+    description: Orders in a foreign currency also need finance review
+    when:
+      currency:
+        not_equals: NZD
+    then:
+      decision: approval_required
+      approver: finance
+
+tests:
+  - name: small order in NZD
+    input:
+      amount: 400
+      currency: NZD
+    expect:
+      decision: approved
+      matched_rules: [po-small]
+
+  - name: mid-sized order in NZD
+    input:
+      amount: 2500
+      currency: NZD
+    expect:
+      decision: approval_required
+      matched_rules: [po-manager]
+
+  - name: large order in NZD
+    input:
+      amount: 12000
+      currency: NZD
+    expect:
+      decision: approval_required
+      matched_rules: [po-director]
+
+  - name: small order in USD needs finance
+    input:
+      amount: 400
+      currency: USD
+    expect:
+      decision: approval_required
+      matched_rules: [po-small, po-foreign-currency]
