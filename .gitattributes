@@ -1,0 +1,2 @@
+# Evidence example files are hashed, so their bytes must not change on checkout.
+examples/evidence/files/** -text
