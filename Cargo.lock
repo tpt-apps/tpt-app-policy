@@ -833,6 +833,7 @@ dependencies = [
  "clap",
  "serde",
  "serde_json",
+ "tpt-commercial-cli",
  "tpt-data-core",
  "tpt-policy-core",
  "tpt-report",
@@ -860,6 +861,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.0",
+ "tpt-commercial-cli",
  "tpt-policy-core",
  "tpt-report",
  "tpt-schema",
@@ -890,6 +892,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tiny_http",
+ "tpt-commercial-cli",
  "tpt-document",
  "tpt-policy-core",
  "tpt-schema",
@@ -982,6 +985,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "tpt-commercial-cli",
  "tpt-data-core",
 ]
 

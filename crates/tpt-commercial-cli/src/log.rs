@@ -4,6 +4,8 @@
 //! Log fields carry sizes, hashes, rule IDs, counts and timings. They never
 //! carry input values, so `--debug` cannot leak customer records.
 
+use std::time::Instant;
+
 use clap::Args;
 use serde_json::{Map, Value};
 
@@ -58,6 +60,40 @@ impl Logger {
             max,
             json: options.json_logs,
         }
+    }
+
+    /// Log the start of a run. Returns the start time for [`Logger::finished`].
+    /// Pass the binary's own name and version, not this crate's.
+    pub fn started(&self, product: &str, version: &str) -> Instant {
+        self.info(
+            "command started",
+            &[
+                ("product", Value::from(product)),
+                ("version", Value::from(version)),
+            ],
+        );
+        self.debug(
+            "platform",
+            &[
+                ("os", Value::from(std::env::consts::OS)),
+                ("arch", Value::from(std::env::consts::ARCH)),
+            ],
+        );
+        Instant::now()
+    }
+
+    /// Log the end of a run with its exit code and elapsed time.
+    pub fn finished(&self, started: Instant, code: u8) {
+        self.info(
+            "command finished",
+            &[
+                ("exit_code", Value::from(code)),
+                (
+                    "elapsed_ms",
+                    Value::from(started.elapsed().as_millis() as u64),
+                ),
+            ],
+        );
     }
 
     /// A step the command took, e.g. "policy loaded".
