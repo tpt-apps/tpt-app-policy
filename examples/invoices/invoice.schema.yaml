@@ -1,0 +1,32 @@
+schema: invoice
+version: "1.0.0"
+fields:
+  invoice_number:
+    type: string
+    required: true
+  issue_date:
+    type: string
+    required: true
+    pattern: '^\d{4}-\d{2}-\d{2}$'
+  supplier.name:
+    type: string
+    required: true
+  supplier.tax_id:
+    type: string
+    required: true
+  currency:
+    type: string
+    required: true
+    enum: [NZD, AUD, USD, GBP, EUR]
+  subtotal:
+    type: number
+    required: true
+    min: 0
+  tax:
+    type: number
+    required: true
+    min: 0
+  total:
+    type: number
+    required: true
+    min: 0

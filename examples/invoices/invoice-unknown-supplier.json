@@ -1,0 +1,13 @@
+{
+  "invoice_number": "INV-2004",
+  "issue_date": "2026-03-07",
+  "supplier": { "name": "Unlisted Traders", "tax_id": "555-000-111" },
+  "currency": "NZD",
+  "lines": [
+    { "description": "Paper", "quantity": 4, "unit_price": 12.00, "amount": 48.00 }
+  ],
+  "subtotal": 48.00,
+  "tax_rate": 0.15,
+  "tax": 7.20,
+  "total": 55.20
+}

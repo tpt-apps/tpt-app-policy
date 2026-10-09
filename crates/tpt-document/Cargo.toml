@@ -1,6 +1,6 @@
 [package]
-name = "tpt-data"
-description = "TPT Data Validator: check CSV, JSON and JSON Lines records against a schema"
+name = "tpt-document"
+description = "TPT Document Validator: check JSON and XML documents against a schema and a policy"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,14 +11,14 @@ publish.workspace = true
 workspace = true
 
 [[bin]]
-name = "tpt-data"
+name = "tpt-document"
 path = "src/main.rs"
 
 [dependencies]
-tpt-data-core.workspace = true
 tpt-schema.workspace = true
 tpt-policy-core.workspace = true
-tpt-report.workspace = true
-clap.workspace = true
+quick-xml.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
+clap.workspace = true

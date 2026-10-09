@@ -14,6 +14,8 @@ decision and the rules that produced it. Runs locally, offline, with no account.
 - [Integration](docs/INTEGRATION.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [FAQ and tips](docs/FAQ.md)
 - [Security](docs/SECURITY.md) · [Get help](docs/SUPPORT.md)
 - Data Validator (in development): [command reference](docs/DATA_VALIDATOR.md) · [schema reference](docs/SCHEMA_REFERENCE.md)
+- Document Validator (in development): [command reference](docs/DOCUMENT_VALIDATOR.md)
+- Invoice Validator (in development): [command reference](docs/INVOICE_VALIDATOR.md)
 
 ## Quickstart
 

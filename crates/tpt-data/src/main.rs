@@ -21,6 +21,7 @@ use tpt_data_core::report::row_block;
 use tpt_data_core::validate::Summary;
 use tpt_data_core::{open, sha256_file, DataError, Format, InvalidWriter, ValidWriter, Validator};
 use tpt_policy_core::{parse_policy, Policy};
+use tpt_report::{data_report_html, DataReport, ReportRow};
 use tpt_schema::{parse_schema, Mode, Schema, SCHEMA_ENGINE_VERSION};
 
 const EXIT_OK: u8 = 0;
@@ -31,6 +32,9 @@ const EXIT_INVALID_RECORDS: u8 = 10;
 
 /// How many invalid records to show on the console. The rest are in errors.txt.
 const CONSOLE_ERRORS: usize = 20;
+
+/// How many invalid records the HTML report lists. The rest are in invalid.jsonl.
+const HTML_ROWS: usize = 500;
 
 #[derive(Parser)]
 #[command(
@@ -61,6 +65,9 @@ enum Command {
         /// Folder for the output files. Created if missing.
         #[arg(long, value_name = "DIR", default_value = "tpt-data-out")]
         out: PathBuf,
+        /// Also write report.html, a self-contained page for people to read
+        #[arg(long)]
+        html: bool,
     },
     /// Check that this install works
     Doctor,
@@ -91,7 +98,8 @@ fn main() -> ExitCode {
             policy,
             format,
             out,
-        } => match validate(&input, &schema, policy.as_deref(), format, &out) {
+            html,
+        } => match validate(&input, &schema, policy.as_deref(), format, &out, html) {
             Ok(code) => code,
             Err(code) => code,
         },
@@ -106,6 +114,7 @@ fn validate(
     policy_path: Option<&Path>,
     format: Option<FormatArg>,
     out: &Path,
+    html: bool,
 ) -> Result<u8, u8> {
     let schema = load_schema(schema_path)?;
     let policy = policy_path.map(load_policy).transpose()?;
@@ -141,6 +150,7 @@ fn validate(
     let mut validator = Validator::new(&schema, policy.as_ref(), mode);
     let mut summary = Summary::default();
     let mut shown = Vec::new();
+    let mut html_rows = Vec::new();
 
     for item in items.by_ref() {
         let outcome = validator.check(item);
@@ -162,6 +172,16 @@ fn validate(
             if shown.len() < CONSOLE_ERRORS {
                 shown.push(block);
             }
+            if html && html_rows.len() < HTML_ROWS {
+                html_rows.push(ReportRow {
+                    number: outcome.number,
+                    errors: outcome
+                        .errors
+                        .iter()
+                        .map(|e| (e.field.clone(), e.reason.clone()))
+                        .collect(),
+                });
+            }
         }
     }
 
@@ -181,6 +201,29 @@ fn validate(
         &input_sha,
         &summary,
     )?;
+
+    if html {
+        let report = DataReport {
+            schema_name: schema.name.clone(),
+            schema_version: schema.version.clone(),
+            policy: policy.as_ref().map(|p| (p.name.clone(), p.version.clone())),
+            input_file: input
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default(),
+            input_format: format.name().to_string(),
+            input_sha256: input_sha.clone(),
+            processed: summary.processed,
+            valid: summary.valid,
+            invalid: summary.invalid,
+            errors_by_field: sorted_by_count(&summary.errors_by_field),
+            decisions: sorted_by_count(&summary.decisions),
+            rows_omitted: summary.invalid - html_rows.len() as u64,
+            rows: html_rows,
+        };
+        fs::write(out.join("report.html"), data_report_html(&report))
+            .map_err(|e| io_error(out, "cannot write HTML report", &e))?;
+    }
 
     print_console(&summary, &shown, out);
     Ok(if summary.invalid == 0 {
@@ -315,6 +358,13 @@ fn print_console(summary: &Summary, shown: &[String], out: &Path) {
     }
     println!();
     println!("written to {}", out.display());
+}
+
+/// Most frequent first, then by name, so the order is the same on every run.
+fn sorted_by_count(map: &std::collections::BTreeMap<String, u64>) -> Vec<(String, u64)> {
+    let mut items: Vec<(String, u64)> = map.iter().map(|(k, v)| (k.clone(), *v)).collect();
+    items.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    items
 }
 
 /// Thousands separators, so 1247 reads as 1,247.

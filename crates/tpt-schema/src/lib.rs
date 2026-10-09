@@ -119,7 +119,7 @@ pub enum Mode {
 }
 
 /// A failed check on one field.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct FieldError {
     pub field: String,
     pub reason: String,
@@ -497,5 +497,40 @@ fn value_key(value: &Value) -> String {
     match value {
         Value::String(s) => s.trim().to_string(),
         other => other.to_string(),
+    }
+}
+
+/// The record with each schema field converted to its declared type.
+///
+/// Policies compare numbers and booleans, so text from CSV or XML has to be
+/// converted first. Fields that fail the check are left as they were. Call this
+/// on records that have already passed [`check_record`].
+pub fn typed_record(schema: &Schema, record: &Value, mode: Mode) -> Value {
+    let mut typed = record.clone();
+    for field in &schema.fields {
+        let Some(value) = lookup(record, &field.path).filter(|v| !v.is_null()) else {
+            continue;
+        };
+        if let Ok(converted) = coerce(field.kind, value, mode) {
+            set_path(&mut typed, &field.path, converted);
+        }
+    }
+    typed
+}
+
+fn set_path(root: &mut Value, path: &str, value: Value) {
+    let mut current = root;
+    let mut parts = path.split('.').peekable();
+    while let Some(part) = parts.next() {
+        let Value::Object(map) = current else {
+            return;
+        };
+        if parts.peek().is_none() {
+            map.insert(part.to_string(), value);
+            return;
+        }
+        current = map
+            .entry(part.to_string())
+            .or_insert_with(|| Value::Object(serde_json::Map::new()));
     }
 }

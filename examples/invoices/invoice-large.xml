@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<invoice>
+  <invoice_number>INV-2002</invoice_number>
+  <issue_date>2026-03-05</issue_date>
+  <supplier>
+    <name>Harbour Supplies Ltd</name>
+    <tax_id>123-456-789</tax_id>
+  </supplier>
+  <currency>NZD</currency>
+  <lines>
+    <line>
+      <description>Server rack</description>
+      <quantity>5</quantity>
+      <unit_price>1000.00</unit_price>
+      <amount>5000.00</amount>
+    </line>
+  </lines>
+  <subtotal>5000.00</subtotal>
+  <tax_rate>0.15</tax_rate>
+  <tax>750.00</tax>
+  <total>5750.00</total>
+</invoice>

@@ -1,0 +1,8 @@
+{
+  "po_number": "PO-0091",
+  "order_date": "2026-03-10",
+  "buyer": { "name": "TPT Solutions" },
+  "supplier": { "name": "Harbour Supplies Ltd" },
+  "currency": "NZD",
+  "total": 480.50
+}

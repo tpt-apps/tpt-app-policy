@@ -1,6 +1,6 @@
 [package]
-name = "tpt-data"
-description = "TPT Data Validator: check CSV, JSON and JSON Lines records against a schema"
+name = "tpt-invoice"
+description = "TPT Invoice Validator: arithmetic, supplier and duplicate checks for invoices"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,14 +11,13 @@ publish.workspace = true
 workspace = true
 
 [[bin]]
-name = "tpt-data"
+name = "tpt-invoice"
 path = "src/main.rs"
 
 [dependencies]
-tpt-data-core.workspace = true
+tpt-document.workspace = true
 tpt-schema.workspace = true
 tpt-policy-core.workspace = true
-tpt-report.workspace = true
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true

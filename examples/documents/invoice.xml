@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<invoice>
+  <invoice_number>INV-1042</invoice_number>
+  <issue_date>2026-03-14</issue_date>
+  <supplier id="S-17">
+    <name>Harbour Supplies Ltd</name>
+    <tax_id>123-456-789</tax_id>
+  </supplier>
+  <line sku="A1">Office chair</line>
+  <line sku="B2">Desk lamp</line>
+  <currency>NZD</currency>
+  <subtotal>5000.00</subtotal>
+  <tax>750.00</tax>
+  <total>5750.00</total>
+</invoice>

@@ -27,6 +27,26 @@ Not yet tagged. Scope for 0.1 is in [TODO.md](TODO.md).
 - Docs: install, quickstart, concepts, CLI reference, policy reference,
   integration, troubleshooting, security (in `docs/`).
 
+### Data Validator (`tpt-data`, in development)
+
+- Schemas in YAML: types, `required`, `unique`, `enum`, `pattern`, `min`/`max`.
+- Validates CSV, JSON and JSON Lines. Writes valid and invalid records, an error
+  report, `summary.json`, and optionally `report.html`.
+- Optional policy check on valid records.
+
+### Document Validator (`tpt-document`, in development)
+
+- Validates JSON and XML documents against a schema, then an optional policy.
+  Verdicts: PASS, REVIEW, FAIL.
+- XML is read by fixed rules, documented in `docs/DOCUMENT_VALIDATOR.md`.
+- Templates for invoice, purchase order, supplier, customer and shipping records.
+
+### Invoice Validator (`tpt-invoice`, in development)
+
+- Checks line items, subtotal, tax, total, approved suppliers and duplicates
+  (file-based ledger), then an optional policy. Verdicts: PASS, REVIEW, REJECT.
+- Money is checked to within one cent.
+
 ### Known limits
 
 - Single-threaded HTTP server. Not intended for direct internet exposure.

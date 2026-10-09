@@ -1,0 +1,24 @@
+schema: purchase-order
+version: "1.0.0"
+fields:
+  po_number:
+    type: string
+    required: true
+  order_date:
+    type: string
+    required: true
+    pattern: '^\d{4}-\d{2}-\d{2}$'
+  buyer.name:
+    type: string
+    required: true
+  supplier.name:
+    type: string
+    required: true
+  currency:
+    type: string
+    required: true
+    enum: [NZD, AUD, USD, GBP, EUR]
+  total:
+    type: number
+    required: true
+    min: 0

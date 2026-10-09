@@ -1,0 +1,9 @@
+<shipment>
+  <shipment_id>SH-88310</shipment_id>
+  <ship_date>2026-03-12</ship_date>
+  <carrier>DHL</carrier>
+  <weight_kg>12.4</weight_kg>
+  <destination>
+    <country>AU</country>
+  </destination>
+</shipment>

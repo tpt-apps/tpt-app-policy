@@ -1,0 +1,8 @@
+{
+  "invoice_number": "INV-1043",
+  "issue_date": "14/03/2026",
+  "supplier": { "name": "Bayside Parts" },
+  "currency": "XYZ",
+  "subtotal": "120.00",
+  "total": 132
+}

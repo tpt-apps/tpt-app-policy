@@ -1,0 +1,13 @@
+{
+  "invoice_number": "INV-2001",
+  "issue_date": "2026-03-09",
+  "supplier": { "name": "Harbour Supplies Ltd", "tax_id": "123-456-789" },
+  "currency": "NZD",
+  "lines": [
+    { "description": "Office chair", "quantity": 2, "unit_price": 200.00, "amount": 400.00 }
+  ],
+  "subtotal": 400.00,
+  "tax_rate": 0.15,
+  "tax": 60.00,
+  "total": 460.00
+}

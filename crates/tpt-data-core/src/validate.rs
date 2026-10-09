@@ -10,9 +10,9 @@ use std::collections::BTreeMap;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use tpt_policy_core::{evaluate, Evaluation, Policy};
-use tpt_schema::{check_record, coerce, lookup, Mode, Schema, UniqueIndex};
+use tpt_schema::{check_record, Mode, Schema, UniqueIndex};
 
-use crate::input::{set_path, Item};
+use crate::input::Item;
 
 /// Pseudo-field used when a record could not be read at all.
 pub const RECORD_FIELD: &str = "(record)";
@@ -140,19 +140,12 @@ impl<'a> Validator<'a> {
         }
     }
 
-    /// The record with each schema field converted to its declared type.
-    /// CSV cells are text, and policy comparisons need numbers and booleans.
-    /// Only call this for records that passed the schema, so every field converts.
+    /// The record with each schema field converted to its declared type. See
+    /// [`tpt_schema::typed_record`].
     fn typed(&self, record: &Value) -> Map<String, Value> {
-        let mut typed = record.as_object().cloned().unwrap_or_default();
-        for field in &self.schema.fields {
-            let Some(value) = lookup(record, &field.path).filter(|v| !v.is_null()) else {
-                continue;
-            };
-            if let Ok(converted) = coerce(field.kind, value, self.mode) {
-                set_path(&mut typed, &field.path, converted);
-            }
+        match tpt_schema::typed_record(self.schema, record, self.mode) {
+            Value::Object(map) => map,
+            _ => Map::new(),
         }
-        typed
     }
 }

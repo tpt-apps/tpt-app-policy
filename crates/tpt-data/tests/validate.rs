@@ -243,3 +243,29 @@ fn unknown_extension_needs_format_flag() {
 fn doctor_passes() {
     assert_eq!(code(&run(&["doctor"])), 0);
 }
+
+#[test]
+fn html_flag_writes_a_report_with_each_invalid_row() {
+    let out = scratch("html");
+    let result = run(&[
+        "validate",
+        example("customers.csv").to_str().unwrap(),
+        "--schema",
+        example("customer.schema.yaml").to_str().unwrap(),
+        "--out",
+        out.to_str().unwrap(),
+        "--html",
+    ]);
+    assert_eq!(code(&result), 10);
+    let html = std::fs::read_to_string(out.join("report.html")).expect("report written");
+    assert_eq!(html.matches("<article>").count(), 5);
+    assert!(html.contains("<h3>Row 4</h3>"));
+    assert!(!html.contains("<script"));
+}
+
+#[test]
+fn no_html_file_without_the_flag() {
+    let out = scratch("no-html");
+    validate(&example("customers.csv"), &out, false);
+    assert!(!out.join("report.html").exists());
+}

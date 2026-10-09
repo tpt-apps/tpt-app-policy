@@ -2,9 +2,13 @@
 //!
 //! Reporters turn an [`Evaluation`] into output text. The JSON reporter is
 //! the machine format and must stay stable. The terminal reporter is for
-//! people. HTML arrives in Phase 3.
+//! people. The HTML reporter is for data validation runs (see [`html`]).
+
+pub mod html;
 
 use tpt_policy_core::Evaluation;
+
+pub use html::{data_report_html, DataReport, ReportRow};
 
 /// Render an evaluation as pretty-printed JSON, the format `check` and `run` print.
 pub fn json(evaluation: &Evaluation) -> String {

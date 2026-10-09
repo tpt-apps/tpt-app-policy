@@ -1,0 +1,20 @@
+schema: supplier
+version: "1.0.0"
+fields:
+  supplier_id:
+    type: string
+    required: true
+  name:
+    type: string
+    required: true
+  tax_id:
+    type: string
+    required: true
+  country:
+    type: string
+    required: true
+    enum: [NZ, AU, US, GB, DE, FR]
+  contact.email:
+    type: string
+    required: true
+    pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'

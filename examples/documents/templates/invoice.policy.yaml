@@ -1,0 +1,22 @@
+policy: invoice-approval
+version: "1.0.0"
+default_decision: approved
+
+rules:
+  - id: large-invoice
+    description: Invoices of 5000 or more need finance approval
+    when:
+      total:
+        gte: 5000
+    then:
+      decision: approval_required
+      approver: finance
+
+  - id: foreign-currency
+    description: Foreign-currency invoices are checked against the exchange rate
+    when:
+      currency:
+        not_equals: NZD
+    then:
+      decision: review
+      requirement: Check the exchange rate used

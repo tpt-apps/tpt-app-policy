@@ -1,13 +1,48 @@
 #!/usr/bin/env sh
 # Builds a release bundle in the layout from spec §23 and writes checksums (§40).
 #
-# Usage: scripts/package.sh
-# Output: dist/tpt-app-policy-<version>-<platform>.tar.gz and dist/SHA256SUMS
+# Usage: scripts/package.sh [policy|data]
+#   policy (default): TPT App Policy, binary tpt-policy
+#   data:             TPT Data Validator, binary tpt-data
+#   document:         TPT Document Validator, binary tpt-document
+#   invoice:          TPT Invoice Validator, binary tpt-invoice
+#
+# Output: dist/<name>-<version>-<platform>.tar.gz, and dist/SHA256SUMS listing
+# every archive in dist/.
 #
 # Runs on Linux, macOS and Git Bash on Windows.
 set -eu
 
 cd "$(dirname "$0")/.."
+
+PRODUCT=${1:-policy}
+case "$PRODUCT" in
+    policy)
+        CRATE=tpt-app-policy
+        BINARY=tpt-policy
+        NAME_PREFIX=tpt-app-policy
+        ;;
+    data)
+        CRATE=tpt-data
+        BINARY=tpt-data
+        NAME_PREFIX=tpt-data
+        ;;
+    invoice)
+        CRATE=tpt-invoice
+        BINARY=tpt-invoice
+        NAME_PREFIX=tpt-invoice
+        ;;
+    document)
+        CRATE=tpt-document
+        BINARY=tpt-document
+        NAME_PREFIX=tpt-document
+        ;;
+    *)
+        echo "error: unknown product '$PRODUCT'" >&2
+        echo "  fix: use 'policy', 'data', 'document' or 'invoice'" >&2
+        exit 1
+        ;;
+esac
 
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
 ARCH=$(uname -m)
@@ -22,8 +57,9 @@ case "$(uname -s)" in
     *) echo "error: unsupported OS $(uname -s)" >&2; exit 1 ;;
 esac
 PLATFORM="$OS-$ARCH"
-NAME="tpt-app-policy-$VERSION"
+NAME="$NAME_PREFIX-$VERSION"
 BUNDLE="dist/$NAME"
+ARCHIVE="$NAME-$PLATFORM.tar.gz"
 
 # Both licence texts ship in every bundle. Refuse to package without them.
 for f in LICENSE-MIT LICENSE-APACHE; do
@@ -34,27 +70,51 @@ for f in LICENSE-MIT LICENSE-APACHE; do
 done
 
 echo "building $NAME for $PLATFORM"
-cargo build --release -p tpt-app-policy
+cargo build --release -p "$CRATE"
 
-rm -rf "dist"
-mkdir -p "$BUNDLE/bin" "$BUNDLE/examples" "$BUNDLE/policies" "$BUNDLE/schemas" "$BUNDLE/docs"
+rm -rf "$BUNDLE" "dist/$ARCHIVE"
+mkdir -p "$BUNDLE/bin" "$BUNDLE/docs"
 
-cp "target/release/tpt-policy$EXT" "$BUNDLE/bin/"
-cp -R examples/. "$BUNDLE/examples/"
-cp examples/expense/expense.yaml examples/purchasing/purchasing.yaml "$BUNDLE/policies/"
-# User-facing docs only. ARCHITECTURE.md is internal planning and stays out.
-for doc in INSTALL QUICKSTART CONCEPTS CLI_REFERENCE POLICY_REFERENCE INTEGRATION TROUBLESHOOTING SECURITY SUPPORT FAQ; do
-    cp "docs/$doc.md" "$BUNDLE/docs/"
-done
-cp README.md CHANGELOG.md "$BUNDLE/"
+cp "target/release/$BINARY$EXT" "$BUNDLE/bin/"
 cp LICENSE-MIT LICENSE-APACHE "$BUNDLE/"
 
-# Version and platform in the bundle itself, so a loose binary can be identified.
-"$BUNDLE/bin/tpt-policy$EXT" --version > "$BUNDLE/VERSION.txt"
+if [ "$PRODUCT" = policy ]; then
+    mkdir -p "$BUNDLE/examples" "$BUNDLE/policies"
+    cp -R examples/. "$BUNDLE/examples/"
+    cp examples/expense/expense.yaml examples/purchasing/purchasing.yaml "$BUNDLE/policies/"
+    # User-facing docs only. ARCHITECTURE.md is internal planning and stays out.
+    for doc in INSTALL QUICKSTART CONCEPTS CLI_REFERENCE POLICY_REFERENCE INTEGRATION TROUBLESHOOTING SECURITY SUPPORT FAQ; do
+        cp "docs/$doc.md" "$BUNDLE/docs/"
+    done
+    cp README.md CHANGELOG.md "$BUNDLE/"
+elif [ "$PRODUCT" = data ]; then
+    mkdir -p "$BUNDLE/examples"
+    cp -R examples/data/. "$BUNDLE/examples/"
+    for doc in DATA_VALIDATOR SCHEMA_REFERENCE SECURITY; do
+        cp "docs/$doc.md" "$BUNDLE/docs/"
+    done
+    cp CHANGELOG.md "$BUNDLE/"
+elif [ "$PRODUCT" = invoice ]; then
+    mkdir -p "$BUNDLE/examples"
+    cp -R examples/invoices/. "$BUNDLE/examples/"
+    for doc in INVOICE_VALIDATOR DOCUMENT_VALIDATOR SCHEMA_REFERENCE POLICY_REFERENCE SECURITY; do
+        cp "docs/$doc.md" "$BUNDLE/docs/"
+    done
+    cp CHANGELOG.md "$BUNDLE/"
+else
+    mkdir -p "$BUNDLE/examples"
+    cp -R examples/documents/. "$BUNDLE/examples/"
+    for doc in DOCUMENT_VALIDATOR SCHEMA_REFERENCE POLICY_REFERENCE SECURITY; do
+        cp "docs/$doc.md" "$BUNDLE/docs/"
+    done
+    cp CHANGELOG.md "$BUNDLE/"
+fi
 
-ARCHIVE="$NAME-$PLATFORM.tar.gz"
+# Version and platform in the bundle itself, so a loose binary can be identified.
+"$BUNDLE/bin/$BINARY$EXT" --version > "$BUNDLE/VERSION.txt"
+
 tar -czf "dist/$ARCHIVE" -C dist "$NAME"
-(cd dist && sha256sum "$ARCHIVE" > SHA256SUMS)
+(cd dist && sha256sum ./*.tar.gz | sed 's|\./||' > SHA256SUMS)
 
 echo "wrote dist/$ARCHIVE"
 echo "wrote dist/SHA256SUMS"
