@@ -15,6 +15,7 @@ name = "tpt-invoice"
 path = "src/main.rs"
 
 [dependencies]
+tpt-commercial-cli.workspace = true
 tpt-document.workspace = true
 tpt-schema.workspace = true
 tpt-policy-core.workspace = true

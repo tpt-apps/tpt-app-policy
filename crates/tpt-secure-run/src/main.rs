@@ -19,6 +19,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use tpt_commercial_cli::exit;
+use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_secure_run::codes;
 use tpt_secure_run::manifest::{parse_manifest, Manifest};
 use tpt_secure_run::{check_module, run_module, self_test, PRODUCT, RUNNER_VERSION};
@@ -32,6 +33,8 @@ use tpt_secure_run::{check_module, run_module, self_test, PRODUCT, RUNNER_VERSIO
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -60,6 +63,8 @@ enum Command {
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    let started = log.started(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
     let code = match cli.command {
         Command::Run {
             manifest,
@@ -69,6 +74,7 @@ fn main() -> ExitCode {
         Command::Validate { manifest, module } => validate(&manifest, module.as_deref()),
         Command::Doctor => doctor(),
     };
+    log.finished(started, code);
     ExitCode::from(code)
 }
 

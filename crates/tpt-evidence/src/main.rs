@@ -19,6 +19,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use tpt_commercial_cli::exit;
+use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_evidence::html::evidence_report_html;
 use tpt_evidence::{
     parse_controls, parse_index, process, report_json, summary_lines, verify, Manifest,
@@ -37,6 +38,8 @@ const EXIT_INCOMPLETE: u8 = 20;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -70,7 +73,10 @@ enum Command {
 }
 
 fn main() -> ExitCode {
-    let code = match Cli::parse().command {
+    let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    let started = log.started(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    let code = match cli.command {
         Command::Process {
             evidence,
             controls,
@@ -80,6 +86,7 @@ fn main() -> ExitCode {
         Command::Verify { manifest, root } => verify_command(&manifest, &root),
         Command::Doctor => doctor(),
     };
+    log.finished(started, code);
     ExitCode::from(code)
 }
 

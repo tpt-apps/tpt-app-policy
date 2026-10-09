@@ -20,6 +20,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use serde_json::{json, Value};
 use tpt_approve::{analyse, check, parse_approval, ApprovalFile, APPROVE_VERSION};
 use tpt_commercial_cli::exit;
+use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_policy_core::Decision;
 
 #[derive(Parser)]
@@ -31,6 +32,8 @@ use tpt_policy_core::Decision;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -63,7 +66,10 @@ enum Format {
 }
 
 fn main() -> ExitCode {
-    let code = match Cli::parse().command {
+    let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    let started = log.started(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    let code = match cli.command {
         Command::Validate { rules } => validate(&rules),
         Command::Check {
             request,
@@ -72,6 +78,7 @@ fn main() -> ExitCode {
         } => check_request(&request, &rules, format),
         Command::Doctor => doctor(),
     };
+    log.finished(started, code);
     ExitCode::from(code)
 }
 

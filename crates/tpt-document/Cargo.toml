@@ -15,6 +15,7 @@ name = "tpt-document"
 path = "src/main.rs"
 
 [dependencies]
+tpt-commercial-cli.workspace = true
 tpt-schema.workspace = true
 tpt-policy-core.workspace = true
 tpt-report.workspace = true

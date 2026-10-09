@@ -25,6 +25,7 @@ use tpt_ai_guard::{
     GUARD_VERSION,
 };
 use tpt_commercial_cli::exit;
+use tpt_commercial_cli::log::{LogOptions, Logger};
 
 mod serve;
 
@@ -37,6 +38,8 @@ mod serve;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -89,7 +92,10 @@ enum Format {
 }
 
 fn main() -> ExitCode {
-    let code = match Cli::parse().command {
+    let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    let started = log.started(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    let code = match cli.command {
         Command::Check {
             request,
             policy,
@@ -105,6 +111,7 @@ fn main() -> ExitCode {
         } => serve_guard(&policy, grants.as_deref(), &listen, token),
         Command::Doctor => doctor(),
     };
+    log.finished(started, code);
     ExitCode::from(code)
 }
 

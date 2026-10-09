@@ -17,6 +17,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use serde_json::{json, Value};
+use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_data_core::{open, sha256_file, Format, ValidWriter};
 use tpt_transform::{output_headers, parse_pipeline, run, Outcome, PipelineFile, Rejection};
 
@@ -38,6 +39,8 @@ const CONSOLE_REJECTIONS: usize = 20;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -87,7 +90,10 @@ impl FormatArg {
 }
 
 fn main() -> ExitCode {
-    let code = match Cli::parse().command {
+    let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    let started = log.started(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    let code = match cli.command {
         Command::Run {
             input,
             pipeline,
@@ -104,6 +110,7 @@ fn main() -> ExitCode {
         Command::Check { pipeline } => check(&pipeline),
         Command::Doctor => doctor(),
     };
+    log.finished(started, code);
     ExitCode::from(code)
 }
 

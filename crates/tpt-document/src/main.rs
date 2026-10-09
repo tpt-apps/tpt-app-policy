@@ -18,6 +18,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use serde_json::json;
+use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_document::{
     check_document, file_sha256, read_document, DocError, DocFormat, DocResult, Parsed, Verdict,
 };
@@ -37,6 +38,8 @@ const EXIT_USAGE: u8 = 2;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -64,7 +67,10 @@ enum Command {
 }
 
 fn main() -> ExitCode {
-    let code = match Cli::parse().command {
+    let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    let started = log.started(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    let code = match cli.command {
         Command::Validate {
             documents,
             schema,
@@ -74,6 +80,7 @@ fn main() -> ExitCode {
         } => validate(&documents, &schema, policy.as_deref(), out.as_deref(), html),
         Command::Doctor => doctor(),
     };
+    log.finished(started, code);
     ExitCode::from(code)
 }
 

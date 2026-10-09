@@ -17,6 +17,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use serde::Serialize;
+use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_data_core::report::row_block;
 use tpt_data_core::validate::Summary;
 use tpt_data_core::{open, sha256_file, DataError, Format, InvalidWriter, ValidWriter, Validator};
@@ -45,6 +46,8 @@ const HTML_ROWS: usize = 500;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -91,7 +94,10 @@ impl From<FormatArg> for Format {
 }
 
 fn main() -> ExitCode {
-    let code = match Cli::parse().command {
+    let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    let started = log.started(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    let code = match cli.command {
         Command::Validate {
             input,
             schema,
@@ -105,6 +111,7 @@ fn main() -> ExitCode {
         },
         Command::Doctor => doctor(),
     };
+    log.finished(started, code);
     ExitCode::from(code)
 }
 

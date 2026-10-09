@@ -16,6 +16,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use serde_json::json;
+use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_document::{file_sha256, DocError, Parsed};
 use tpt_invoice::{
     check_invoice, duplicate_key, read_invoices, InvoiceResult, Ledger, Suppliers, Verdict,
@@ -37,6 +38,8 @@ const EXIT_USAGE: u8 = 2;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+    #[command(flatten)]
+    log: LogOptions,
 }
 
 #[derive(Subcommand)]
@@ -90,7 +93,10 @@ enum Command {
 }
 
 fn main() -> ExitCode {
-    let code = match Cli::parse().command {
+    let cli = Cli::parse();
+    let log = Logger::new(cli.log);
+    let started = log.started(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    let code = match cli.command {
         Command::Validate {
             invoices,
             schema,
@@ -128,6 +134,7 @@ fn main() -> ExitCode {
         ),
         Command::Doctor => doctor(),
     };
+    log.finished(started, code);
     ExitCode::from(code)
 }
 

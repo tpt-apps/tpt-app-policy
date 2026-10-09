@@ -15,6 +15,7 @@ name = "tpt-transform"
 path = "src/main.rs"
 
 [dependencies]
+tpt-commercial-cli.workspace = true
 tpt-data-core.workspace = true
 clap.workspace = true
 serde.workspace = true
