@@ -104,9 +104,9 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] `doctor` subcommand: runtime, config, permissions, install, version, optional deps (§29.5). Checks version, platform, working-directory write test, `./tpt` layout (§19, optional), and a built-in self-test. Optional-dependency checks are not needed yet, since no optional dependencies exist.
 - [ ] Signed policy bundles / release checksums via tpt-crypto (optional signatures)
 - [x] Docker image (`tpt/app-policy`) (§25). Built and tested on Docker Desktop (Windows): `doctor`, `check` (matches the golden output), `serve` with healthz and bearer auth, non-root user. Image is 117 MB. Linux and macOS not yet tested.
-- [x] Release bundle layout (§23). `scripts/package.sh` builds it, with checksums. Tested on Windows (Git Bash) only. Linux and macOS not yet tested. It refuses to package without `LICENSE-MIT` and `LICENSE-APACHE`.
+- [x] Release bundle layout (§23). `scripts/package.sh` builds it, with checksums. Tested on Windows (Git Bash) and Linux (in a rust:1-bookworm container). macOS not yet tested. It refuses to package without `LICENSE-MIT` and `LICENSE-APACHE`.
 - [ ] Windows x64 build + install test on a clean machine
-- [ ] Linux x64 build + install test on a clean machine
+- [~] Linux x64 build + install test. **Done:** fmt, clippy, all 123 tests, and the four bundles built and unpacked in a `rust:1-bookworm` container, with `--version` and `doctor` run from each bundle. **Not done:** a clean machine, with no Rust toolchain installed.
 - [~] Checksums + release notes for each version (§40). **Done:** `SHA256SUMS` from the packaging script, and `CHANGELOG.md`. **Missing:** signatures (optional in §40)
 
 ### Docs for 1.0 (§30)
@@ -163,7 +163,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] CLI `tpt-data validate file --schema ...`; `doctor`. Exit codes: 0 all valid, 1 I/O, 2 bad schema/policy/usage, 3 unreadable input, 10 invalid records (outputs still written).
 - [x] Docker image `tpt/data` (`Dockerfile.data`). Built and tested on Docker Desktop (Windows): `doctor`, and `validate` on the example CSV (exit 10 for invalid rows, outputs written to the mounted `/out`).
 - [~] Docs, examples, landing page, Gumroad listing. **Done:** `docs/DATA_VALIDATOR.md`, `docs/SCHEMA_REFERENCE.md`, examples in `examples/data/`. **Missing:** landing page, Gumroad listing.
-- [~] Windows + Linux release bundle. `scripts/package.sh data` builds the `tpt-data` bundle. **Done:** Windows (Git Bash). **Missing:** Linux, not built here.
+- [~] Windows + Linux release bundle. `scripts/package.sh data` builds the `tpt-data` bundle. **Done:** Windows (Git Bash). **Done:** Linux (container). **Missing:** a clean-machine Linux install.
 - [ ] Tag **Data Validator 1.0**
 
 ## Phase 4 — Document Platform → TPT Document Validator
@@ -174,7 +174,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Templates: invoice, PO, supplier, customer, shipping records (`examples/documents/templates/`, with a policy for invoices)
 - [x] CLI `tpt-document`; `doctor`; Docker image `tpt/document` (`Dockerfile.document`). **Done:** `validate` (several files, exit code = worst verdict, `--out` for per-document JSON), `doctor`, and Docker tested on Windows (Docker Desktop).
 - [~] Docs, examples, landing page, Gumroad listing. **Done:** `docs/DOCUMENT_VALIDATOR.md`, examples. **Missing:** landing page, Gumroad listing.
-- [~] Windows + Linux release bundle. `scripts/package.sh document` builds it. **Done:** Windows (Git Bash). **Missing:** Linux, not built here.
+- [~] Windows + Linux release bundle. `scripts/package.sh document` builds it. **Done:** Windows (Git Bash). **Done:** Linux (container). **Missing:** a clean-machine Linux install.
 - [ ] HTML report for documents (not started; `tpt-report` has the data-validation page to base it on)
 - [ ] Tag **Document Validator 1.0**
 
@@ -186,7 +186,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] Duplicate detection without a database. Design: a JSON-lines ledger of `supplier tax ID|invoice number`. Accepted invoices are added at once. Documented in `docs/INVOICE_VALIDATOR.md`, including the limit that two concurrent runs can miss a duplicate.
 - [x] Invoice rule/policy templates (`examples/invoices/invoice.policy.yaml`, `invoice.schema.yaml`)
 - [x] CLI `tpt-invoice`; `doctor`; Docker image `tpt/invoice` (`Dockerfile.invoice`). **Done:** `validate` (with `--suppliers`, `--ledger`, `--policy`, `--out`), `doctor`, and Docker tested on Windows (Docker Desktop), including the duplicate ledger persisting across containers.
-- [~] Docs, landing page, Gumroad listing, bundle. **Done:** `docs/INVOICE_VALIDATOR.md`, examples, `scripts/package.sh invoice` (Windows only). **Missing:** landing page, Gumroad listing, Linux bundle.
+- [~] Docs, landing page, Gumroad listing, bundle. **Done:** `docs/INVOICE_VALIDATOR.md`, examples, `scripts/package.sh invoice` (Windows only). **Missing:** landing page, Gumroad listing. Linux bundle built in a container.
 - [ ] Tag **Invoice Validator 1.0**
 
 ## Phase 6 — Transformation → TPT Data Transformer
