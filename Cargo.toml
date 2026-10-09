@@ -20,7 +20,7 @@ members = [
 version = "2026.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/TPT-Solutions/tpt-app-policy"
+repository = "https://github.com/tpt-apps/tpt-app-policy"
 publish = false
 
 [workspace.dependencies]

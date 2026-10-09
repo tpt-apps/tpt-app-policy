@@ -12,7 +12,7 @@ You need a Rust toolchain. The version is pinned in `rust-toolchain.toml`.
 Install it with [rustup](https://rustup.rs).
 
 ```sh
-git clone https://github.com/TPT-Solutions/tpt-app-policy
+git clone https://github.com/tpt-apps/tpt-app-policy
 cd tpt-app-policy
 cargo build --release
 ```
