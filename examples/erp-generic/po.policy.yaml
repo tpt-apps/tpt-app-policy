@@ -1,0 +1,43 @@
+policy: purchase-order-lines
+version: "1.0.0"
+format: 1
+default_decision: review
+
+rules:
+  - id: finance-approval
+    description: Lines over 5000 need finance approval
+    when:
+      line_total:
+        gt: 5000
+    then:
+      decision: approval_required
+      approver: finance
+
+  - id: manager-approval
+    description: Lines over 1000 need manager approval
+    when:
+      line_total:
+        gt: 1000
+    then:
+      decision: approval_required
+      approver: manager
+
+  - id: foreign-currency
+    description: Lines in a currency other than NZD are reviewed by accounts payable
+    when:
+      currency:
+        not_equals: NZD
+    then:
+      decision: review
+      approver: accounts-payable
+
+  - id: small-approved
+    description: Small NZD lines are approved
+    when:
+      all:
+        - line_total:
+            lte: 1000
+        - currency:
+            equals: NZD
+    then:
+      decision: approved

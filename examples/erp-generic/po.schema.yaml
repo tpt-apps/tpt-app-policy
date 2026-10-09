@@ -1,0 +1,42 @@
+# Schema for a generic purchase-order line export.
+#
+# The column names are invented for this example. Map your system's export to
+# these names, or write the schema to match your export. This is not any
+# vendor's format.
+schema: purchase-order-line
+version: "1.0.0"
+fields:
+  po_number:
+    type: string
+    required: true
+    pattern: '^PO-\d{6}$'
+  line_no:
+    type: number
+    required: true
+    min: 1
+  supplier_code:
+    type: string
+    required: true
+  sku:
+    type: string
+    required: true
+  quantity:
+    type: number
+    required: true
+    min: 1
+  unit_price:
+    type: number
+    required: true
+    min: 0
+  line_total:
+    type: number
+    required: true
+    min: 0
+  currency:
+    type: string
+    required: true
+    enum: [NZD, AUD, USD, GBP]
+  cost_centre:
+    type: string
+    required: true
+    enum: [CC10, CC20, CC30]
