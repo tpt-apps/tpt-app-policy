@@ -37,11 +37,32 @@ const CONSOLE_ERRORS: usize = 20;
 /// How many invalid records the HTML report lists. The rest are in invalid.jsonl.
 const HTML_ROWS: usize = 500;
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-data validate examples/data/customers.csv --schema examples/data/customer.schema.yaml
+  tpt-data validate examples/data/customers.jsonl --schema examples/data/customer.schema.yaml --html
+
+Valid and invalid records are written to separate files in --out (default tpt-data-out).
+
+Exit codes (not every command uses every code):
+  0   Success. For a decision: approved
+  1   A file could not be read or written
+  2   A policy, schema or pipeline file is invalid, or the command line is wrong
+  3   The input is not valid JSON or is too large
+  4   One or more inline tests failed
+  5   doctor found a failed check
+  10  Decision: approval required
+  20  Decision: review
+  30  Decision: rejected
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
 #[derive(Parser)]
 #[command(
     name = "tpt-data",
     version,
-    about = "Check CSV, JSON and JSON Lines records against a schema"
+    about = "Check CSV, JSON and JSON Lines records against a schema",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -53,26 +74,30 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Validate a file against a schema, and write valid and invalid records
+    #[command(
+        after_help = "Examples:\n  tpt-data validate examples/data/customers.csv --schema examples/data/customer.schema.yaml\n  tpt-data validate records.json --schema schema.yaml --policy rules.yaml --out results --html\n\nThe schema lists the fields, their types and which are required. A --policy file is evaluated only for records that pass the schema."
+    )]
     Validate {
-        /// Input file: .csv, .json (an array) or .jsonl
+        /// The records to check: .csv (with a header row), .json (an array of objects) or .jsonl (one object per line)
         input: PathBuf,
-        /// Schema file (YAML)
+        /// The schema (YAML) that lists each field, its type, and whether it is required
         #[arg(long, value_name = "FILE")]
         schema: PathBuf,
-        /// Optional policy file. Valid records are also evaluated against it.
+        /// Optional policy (YAML). Records that pass the schema are also evaluated against it
         #[arg(long, value_name = "FILE")]
         policy: Option<PathBuf>,
-        /// Input format. Defaults to the file extension.
+        /// Input format. Defaults to the file extension. Use this when the extension is unusual
         #[arg(long, value_enum)]
         format: Option<FormatArg>,
-        /// Folder for the output files. Created if missing.
+        /// Folder for the valid, invalid and summary files. Created if missing
         #[arg(long, value_name = "DIR", default_value = "tpt-data-out")]
         out: PathBuf,
-        /// Also write report.html, a self-contained page for people to read
+        /// Also write report.html into the output folder: one page for people to read and file
         #[arg(long)]
         html: bool,
     },
-    /// Check that this install works
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(after_help = "Example:\n  tpt-data doctor\n\nExits 5 if a required check fails.")]
     Doctor,
 }
 

@@ -24,11 +24,32 @@ use tpt_secure_run::codes;
 use tpt_secure_run::manifest::{parse_manifest, Manifest};
 use tpt_secure_run::{check_module, run_module, self_test, PRODUCT, RUNNER_VERSION};
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-secure-run validate examples/secure-run/manifest.yaml --module examples/secure-run/count-lines.wasm
+  tpt-secure-run run examples/secure-run/manifest.yaml examples/secure-run/count-lines.wasm
+
+A script can read only the files its manifest grants, and has no network or process access unless the manifest grants it. Each run ends with a JSON report.
+
+Exit codes (not every command uses every code):
+  0   Success. The script ran, or the manifest is valid
+  1   A file could not be read or written
+  2   The manifest is invalid, or the command line is wrong
+  3   The module is not valid WebAssembly, or has no 'run' export
+  4   The script trapped, or used up a limit (steps, memory or call depth)
+  5   doctor found a failed check
+  6   The script returned a non-zero status
+  7   The script imports something the manifest does not grant
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
+
 #[derive(Parser)]
 #[command(
     name = "tpt-secure-run",
     version,
-    about = "Run a WebAssembly script with only the file access its manifest grants"
+    about = "Run a WebAssembly script with only the file access its manifest grants",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -40,24 +61,33 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Run a script under its manifest and print a JSON report
+    #[command(
+        after_help = "Example:\n  tpt-secure-run run examples/secure-run/manifest.yaml examples/secure-run/count-lines.wasm --output report.json\n\nThe JSON report records the script, its status, the limits it ran under, the imports granted, and the bytes it read and wrote."
+    )]
     Run {
-        /// Permission manifest (YAML)
+        /// The permission manifest (YAML): what the script may read, write and call. Relative paths are taken from the manifest's folder
         manifest: PathBuf,
-        /// The script, as a WebAssembly binary (.wasm)
+        /// The script, as a WebAssembly binary (.wasm). The .wat files in examples/secure-run are the readable source
         module: PathBuf,
         /// Write the JSON report to this file instead of stdout
         #[arg(long, value_name = "FILE")]
         output: Option<PathBuf>,
     },
     /// Check a manifest, and optionally a module against it, without running anything
+    #[command(
+        after_help = "Examples:\n  tpt-secure-run validate examples/secure-run/manifest.yaml\n  tpt-secure-run validate examples/secure-run/manifest.yaml --module examples/secure-run/denied-network.wasm\n\nWith --module, the script's imports are checked against the manifest. A script that asks for a permission the manifest does not grant fails here, before it runs."
+    )]
     Validate {
-        /// Permission manifest (YAML)
+        /// The permission manifest (YAML) to check
         manifest: PathBuf,
-        /// Also check that the module's imports are granted
+        /// Also check that the script's imports are all granted by the manifest
         #[arg(long, value_name = "FILE")]
         module: Option<PathBuf>,
     },
-    /// Check the runner itself
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(
+        after_help = "Example:\n  tpt-secure-run doctor\n\nExits 5 if a required check fails."
+    )]
     Doctor,
 }
 

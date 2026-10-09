@@ -29,11 +29,32 @@ use tpt_evidence::{
 const EXIT_VERIFY_FAILED: u8 = 10;
 const EXIT_INCOMPLETE: u8 = 20;
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-evidence process --evidence examples/evidence/evidence.yaml --controls examples/evidence/controls.yaml --as-of 2026-10-10
+  tpt-evidence verify --manifest evidence-out/manifest.json --root examples/evidence
+
+This tool checks evidence against controls and reports on it. It does not certify compliance. A person must still review the result.
+
+Exit codes (not every command uses every code):
+  0   Success. For a decision: approved
+  1   A file could not be read or written
+  2   A policy, schema or pipeline file is invalid, or the command line is wrong
+  3   The input is not valid JSON or is too large
+  4   One or more inline tests failed
+  5   doctor found a failed check
+  10  Decision: approval required
+  20  Decision: review
+  30  Decision: rejected
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
 #[derive(Parser)]
 #[command(
     name = "tpt-evidence",
     version,
-    about = "Inventory, check, hash and report on compliance evidence. Does not certify compliance"
+    about = "Inventory, check, hash and report on compliance evidence. Does not certify compliance",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -45,30 +66,39 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Check evidence against controls, and write the inventory, manifest and reports
+    #[command(
+        after_help = "Example:\n  tpt-evidence process --evidence examples/evidence/evidence.yaml --controls examples/evidence/controls.yaml --as-of 2026-10-10\n\nWrites report.json, report.html and manifest.json to --out. Give the same --as-of date to get the same result."
+    )]
     Process {
-        /// Evidence index (YAML). File paths in it are relative to this file.
+        /// The evidence index (YAML): the files to check. Paths inside it are relative to this file
         #[arg(long, value_name = "FILE")]
         evidence: PathBuf,
-        /// Controls file (YAML)
+        /// The controls (YAML): what each piece of evidence must show, and how old it may be
         #[arg(long, value_name = "FILE")]
         controls: PathBuf,
-        /// The date to check ages against, as YYYY-MM-DD. Required, so results are repeatable.
+        /// The date ages are measured from, as YYYY-MM-DD. Required, so results are repeatable
         #[arg(long, value_name = "DATE")]
         as_of: String,
-        /// Folder for report.json, report.html and manifest.json. Created if missing.
+        /// Folder for report.json, report.html and manifest.json. Created if missing
         #[arg(long, value_name = "DIR", default_value = "evidence-out")]
         out: PathBuf,
     },
     /// Check that the files in a manifest still match their hashes
+    #[command(
+        after_help = "Example:\n  tpt-evidence verify --manifest evidence-out/manifest.json --root examples/evidence\n\nUse this later to prove nothing changed since 'process' ran. Any file that was edited, moved or deleted is reported."
+    )]
     Verify {
-        /// The manifest.json written by `process`
+        /// The manifest.json written by 'process'
         #[arg(long, value_name = "FILE")]
         manifest: PathBuf,
-        /// Folder the manifest paths are relative to (the evidence index folder)
+        /// The folder the manifest's file paths are relative to: the evidence index folder
         #[arg(long, value_name = "DIR")]
         root: PathBuf,
     },
-    /// Check that this install works
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(
+        after_help = "Example:\n  tpt-evidence doctor\n\nExits 5 if a required check fails."
+    )]
     Doctor,
 }
 

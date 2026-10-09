@@ -30,11 +30,32 @@ const EXIT_REJECTED: u8 = 10;
 /// How many rejected records to show on the console. The rest are in rejected.jsonl.
 const CONSOLE_REJECTIONS: usize = 20;
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-transform check --pipeline examples/transform/customers.pipeline.yaml
+  tpt-transform run examples/transform/customers.csv --pipeline examples/transform/customers.pipeline.yaml --out results
+
+A pipeline is a YAML list of steps. Records a step cannot handle go to the rejected file, with the reason.
+
+Exit codes (not every command uses every code):
+  0   Success. For a decision: approved
+  1   A file could not be read or written
+  2   A policy, schema or pipeline file is invalid, or the command line is wrong
+  3   The input is not valid JSON or is too large
+  4   One or more inline tests failed
+  5   doctor found a failed check
+  10  Decision: approval required
+  20  Decision: review
+  30  Decision: rejected
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
 #[derive(Parser)]
 #[command(
     name = "tpt-transform",
     version,
-    about = "Transform CSV, JSON and JSON Lines records with a repeatable pipeline"
+    about = "Transform CSV, JSON and JSON Lines records with a repeatable pipeline",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -46,29 +67,38 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Run a pipeline over a file, and write the transformed and rejected records
+    #[command(
+        after_help = "Examples:\n  tpt-transform run examples/transform/customers.csv --pipeline examples/transform/customers.pipeline.yaml\n  tpt-transform run data.csv --pipeline steps.yaml --to jsonl --out results\n\nThe same pipeline and input always give the same output bytes."
+    )]
     Run {
-        /// Input file: .csv, .json (an array) or .jsonl
+        /// The records to transform: .csv (with a header row), .json (an array) or .jsonl
         input: PathBuf,
-        /// Pipeline file (YAML)
+        /// The pipeline (YAML): the steps to apply, in order
         #[arg(long, value_name = "FILE")]
         pipeline: PathBuf,
-        /// Input format. Defaults to the file extension.
+        /// Input format. Defaults to the file extension
         #[arg(long, value_name = "FORMAT")]
         format: Option<FormatArg>,
-        /// Output format. Defaults to the input format.
+        /// Output format. Defaults to the input format
         #[arg(long, value_name = "FORMAT")]
         to: Option<FormatArg>,
-        /// Folder for the output files. Created if missing.
+        /// Folder for transformed and rejected records. Created if missing
         #[arg(long, value_name = "DIR", default_value = "tpt-transform-out")]
         out: PathBuf,
     },
     /// Check a pipeline file without running it
+    #[command(
+        after_help = "Example:\n  tpt-transform check --pipeline examples/transform/customers.pipeline.yaml\n\nReports the step and line of any error. Nothing is read from the data or written."
+    )]
     Check {
-        /// Pipeline file (YAML)
+        /// The pipeline (YAML) to check
         #[arg(long, value_name = "FILE")]
         pipeline: PathBuf,
     },
-    /// Check that this install works
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(
+        after_help = "Example:\n  tpt-transform doctor\n\nExits 5 if a required check fails."
+    )]
     Doctor,
 }
 

@@ -23,11 +23,32 @@ use tpt_commercial_cli::exit;
 use tpt_commercial_cli::log::{LogOptions, Logger};
 use tpt_policy_core::Decision;
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-approve validate --rules examples/approval/expense.approval.yaml
+  tpt-approve check examples/approval/requests/director.json --rules examples/approval/expense.approval.yaml --format text
+
+Says who must approve a request. It never approves anything itself.
+
+Exit codes (not every command uses every code):
+  0   Success. For a decision: approved
+  1   A file could not be read or written
+  2   A policy, schema or pipeline file is invalid, or the command line is wrong
+  3   The input is not valid JSON or is too large
+  4   One or more inline tests failed
+  5   doctor found a failed check
+  10  Decision: approval required
+  20  Decision: review
+  30  Decision: rejected
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
 #[derive(Parser)]
 #[command(
     name = "tpt-approve",
     version,
-    about = "Say who must approve a request, from deterministic approval rules"
+    about = "Say who must approve a request, from deterministic approval rules",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -39,23 +60,30 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Check an approval rules file for errors, and for gaps in the amounts it covers
+    #[command(
+        after_help = "Example:\n  tpt-approve validate --rules examples/approval/expense.approval.yaml\n\nReports rules that overlap, and amount ranges that no rule covers. A request in an uncovered range gets no approver, so fix these before use."
+    )]
     Validate {
-        /// Approval rules file (YAML)
+        /// The approval rules (YAML): who must approve, by amount, category or other fields
         #[arg(long, value_name = "FILE")]
         rules: PathBuf,
     },
     /// Say who must approve one request (a JSON object)
+    #[command(
+        after_help = "Examples:\n  tpt-approve check examples/approval/requests/director.json --rules examples/approval/expense.approval.yaml\n  tpt-approve check request.json --rules rules.yaml --format text\n\nThe answer lists every approver the request needs. A request with no amount is an error, not a guess."
+    )]
     Check {
-        /// The request, as a JSON file
+        /// The request as a JSON object, such as {"amount": 1200, "category": "travel"}
         request: PathBuf,
-        /// Approval rules file (YAML)
+        /// The approval rules (YAML)
         #[arg(long, value_name = "FILE")]
         rules: PathBuf,
-        /// Output format
+        /// json: machine-readable (the default). text: for a terminal
         #[arg(long, value_enum, default_value_t = Format::Json)]
         format: Format,
     },
-    /// Check that this install works
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(after_help = "Example:\n  tpt-approve doctor\n\nExits 5 if a required check fails.")]
     Doctor,
 }
 

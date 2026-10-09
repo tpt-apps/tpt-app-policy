@@ -29,11 +29,32 @@ use tpt_commercial_cli::log::{LogOptions, Logger};
 
 mod serve;
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-ai-guard validate --policy examples/ai-guard/customer-actions.policy.yaml
+  tpt-ai-guard check examples/ai-guard/requests/refund-large.json --policy examples/ai-guard/customer-actions.policy.yaml --grants examples/ai-guard/grants.yaml
+
+Returns ALLOW, DENY or REQUIRE_APPROVAL for an action an AI agent asks to take. The most restrictive matching rule wins, and no match means DENY.
+
+Exit codes (not every command uses every code):
+  0   Success. For a decision: approved
+  1   A file could not be read or written
+  2   A policy, schema or pipeline file is invalid, or the command line is wrong
+  3   The input is not valid JSON or is too large
+  4   One or more inline tests failed
+  5   doctor found a failed check
+  10  Decision: approval required
+  20  Decision: review
+  30  Decision: rejected
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
 #[derive(Parser)]
 #[command(
     name = "tpt-ai-guard",
     version,
-    about = "Decide ALLOW, DENY or REQUIRE_APPROVAL for actions an AI agent asks to take"
+    about = "Decide ALLOW, DENY or REQUIRE_APPROVAL for actions an AI agent asks to take",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -45,43 +66,53 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Decide one action request (a JSON object with an 'action' field)
+    #[command(
+        after_help = "Examples:\n  tpt-ai-guard check examples/ai-guard/requests/refund-large.json --policy examples/ai-guard/customer-actions.policy.yaml\n  tpt-ai-guard check request.json --policy policy.yaml --grants grants.yaml --format text\n\nExits 0 for ALLOW, 30 for DENY and 10 for REQUIRE_APPROVAL. Without --grants, resources named in the request are not checked."
+    )]
     Check {
-        /// The action request, as a JSON file
+        /// The action request as a JSON object, with an 'action' field
         request: PathBuf,
-        /// Action policy (YAML)
+        /// The action policy (YAML): the rules that decide each action
         #[arg(long, value_name = "FILE")]
         policy: PathBuf,
-        /// Resources delegated to the agent (YAML: fs_read, net_connect, process_spawn).
-        /// Without this, resources named in the request are not checked.
+        /// Resources the agent may use (YAML: fs_read, net_connect, process_spawn). Without this, resources named in the request are not checked
         #[arg(long, value_name = "FILE")]
         grants: Option<PathBuf>,
-        /// Output format
+        /// json: machine-readable (the default). text: for a terminal
         #[arg(long, value_enum, default_value_t = Format::Json)]
         format: Format,
     },
     /// Check an action policy file for errors
+    #[command(
+        after_help = "Example:\n  tpt-ai-guard validate --policy examples/ai-guard/customer-actions.policy.yaml\n\nChecks the file's structure and rules without deciding anything."
+    )]
     Validate {
-        /// Action policy (YAML)
+        /// The action policy (YAML) to check
         #[arg(long, value_name = "FILE")]
         policy: PathBuf,
     },
     /// Serve decisions over HTTP (POST /v1/decide)
+    #[command(
+        after_help = "Examples:\n  tpt-ai-guard serve --policy examples/ai-guard/customer-actions.policy.yaml\n  TPT_AI_GUARD_TOKEN=change-me tpt-ai-guard serve --policy policy.yaml --grants grants.yaml --listen 0.0.0.0:8080\n\nListens on 127.0.0.1:8080 by default. Requests are limited to 1 MB."
+    )]
     Serve {
-        /// Action policy (YAML)
+        /// The action policy (YAML)
         #[arg(long, value_name = "FILE")]
         policy: PathBuf,
-        /// Resources delegated to the agent (YAML), as for `check --grants`
+        /// Resources the agent may use (YAML), as for 'check --grants'
         #[arg(long, value_name = "FILE")]
         grants: Option<PathBuf>,
-        /// Address to listen on. Defaults to localhost only.
-        #[arg(long, default_value = "127.0.0.1:8080")]
+        /// Address and port to listen on. The default only accepts connections from this machine
+        #[arg(long, default_value = "127.0.0.1:8080", value_name = "ADDR")]
         listen: String,
-        /// Bearer token required on POST /v1/decide. Read from TPT_AI_GUARD_TOKEN
-        /// so it does not appear in shell history.
+        /// Bearer token that callers must send. Set TPT_AI_GUARD_TOKEN instead of passing it here, so it stays out of shell history
         #[arg(long, env = "TPT_AI_GUARD_TOKEN", hide_env_values = true)]
         token: Option<String>,
     },
-    /// Check that this install works
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(
+        after_help = "Example:\n  tpt-ai-guard doctor\n\nExits 5 if a required check fails."
+    )]
     Doctor,
 }
 

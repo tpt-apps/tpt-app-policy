@@ -16,11 +16,34 @@ use tpt_policy_core::{evaluate, parse_policy, run_tests, Decision, Policy};
 mod doctor;
 mod serve;
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-policy validate policies/expense.yaml
+  tpt-policy check policies/expense.yaml examples/expense/expense.json
+  tpt-policy explain policies/expense.yaml examples/expense/expense.json
+  tpt-policy test policies/purchasing.yaml
+
+A bare policy name such as 'expense' is also looked up in ./tpt/policies/.
+
+Exit codes (not every command uses every code):
+  0   Success. For a decision: approved
+  1   A file could not be read or written
+  2   A policy, schema or pipeline file is invalid, or the command line is wrong
+  3   The input is not valid JSON or is too large
+  4   One or more inline tests failed
+  5   doctor found a failed check
+  10  Decision: approval required
+  20  Decision: review
+  30  Decision: rejected
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
 #[derive(Parser)]
 #[command(
     name = "tpt-policy",
     version,
-    about = "Evaluate deterministic business rules against JSON input"
+    about = "Evaluate deterministic business rules against JSON input",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -32,17 +55,26 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Check a policy file for errors without evaluating anything
+    #[command(
+        after_help = "Example:\n  tpt-policy validate policies/expense.yaml\n\nPrints 'valid: <name>@<version>' when the policy has no errors. Errors give the line, what is wrong, and how to fix it."
+    )]
     Validate {
+        /// The policy file (YAML), or a bare name looked up in ./tpt/policies/
         policy: PathBuf,
         /// Print nothing when the policy is valid. Errors still print.
         #[arg(long)]
         quiet: bool,
     },
     /// Evaluate a policy against an input file and print the decision
+    #[command(
+        after_help = "Examples:\n  tpt-policy check policies/expense.yaml examples/expense/expense.json\n  tpt-policy check policies/expense.yaml input.json --format html --output decision.html\n  tpt-policy check policies/expense.yaml - < input.json\n\nThe output is JSON by default: decision, approvers, requirements, matched_rules, failed_rules, input_sha256 and versions. The same input always gives the same bytes."
+    )]
     Check {
+        /// The policy file (YAML), or a bare name looked up in ./tpt/policies/
         policy: PathBuf,
-        /// JSON input file, or - to read stdin
+        /// The input record as JSON. Use - to read it from stdin
         input: PathBuf,
+        /// json: machine-readable. text: for a terminal. html: one page for people to read and file
         #[arg(long, value_enum, default_value = "json")]
         format: Format,
         /// Write the result to this file instead of stdout
@@ -50,10 +82,15 @@ enum Command {
         output: Option<PathBuf>,
     },
     /// Like check, but also lists failed rules and why they failed
+    #[command(
+        after_help = "Example:\n  tpt-policy explain policies/expense.yaml examples/expense/expense.json\n\nUse this when a decision surprises someone: it shows every rule that did not match and the field that caused it."
+    )]
     Explain {
+        /// The policy file (YAML), or a bare name looked up in ./tpt/policies/
         policy: PathBuf,
-        /// JSON input file, or - to read stdin
+        /// The input record as JSON. Use - to read it from stdin
         input: PathBuf,
+        /// text: for a terminal (the default). json: machine-readable. html: one page
         #[arg(long, value_enum, default_value = "text")]
         format: Format,
         /// Write the result to this file instead of stdout
@@ -61,31 +98,45 @@ enum Command {
         output: Option<PathBuf>,
     },
     /// Read JSON from stdin and print the decision as JSON
+    #[command(
+        after_help = "Example:\n  cat examples/expense/expense.json | tpt-policy run policies/expense.yaml\n\nFor scripts and pipelines. Reads one JSON object from stdin and prints the JSON decision."
+    )]
     Run {
+        /// The policy file (YAML), or a bare name looked up in ./tpt/policies/
         policy: PathBuf,
         /// Write the result to this file instead of stdout
         #[arg(long, value_name = "FILE")]
         output: Option<PathBuf>,
     },
     /// Run the inline tests defined in the policy file
+    #[command(
+        after_help = "Example:\n  tpt-policy test policies/purchasing.yaml\n\nEach test in the policy's 'tests:' block gives an input and the decision it must produce. Exits 4 if any test fails."
+    )]
     Test {
+        /// The policy file (YAML), or a bare name looked up in ./tpt/policies/
         policy: PathBuf,
         /// Print only failing tests and the summary of failures
         #[arg(long)]
         quiet: bool,
     },
     /// Serve evaluations over HTTP (POST /v1/evaluate)
+    #[command(
+        after_help = "Examples:\n  tpt-policy serve policies/expense.yaml\n  TPT_POLICY_TOKEN=change-me tpt-policy serve policies/expense.yaml --listen 0.0.0.0:8080\n\nListens on 127.0.0.1:8080 by default. Requests are limited to 1 MB."
+    )]
     Serve {
+        /// The policy file (YAML), or a bare name looked up in ./tpt/policies/
         policy: PathBuf,
-        /// Address to listen on. Defaults to localhost only.
-        #[arg(long, default_value = "127.0.0.1:8080")]
+        /// Address and port to listen on. The default only accepts connections from this machine
+        #[arg(long, default_value = "127.0.0.1:8080", value_name = "ADDR")]
         listen: String,
-        /// Bearer token required on POST /v1/evaluate. Read from TPT_POLICY_TOKEN
-        /// so it does not appear in shell history.
+        /// Bearer token that callers must send. Set TPT_POLICY_TOKEN instead of passing it here, so it stays out of shell history
         #[arg(long, env = "TPT_POLICY_TOKEN", hide_env_values = true)]
         token: Option<String>,
     },
-    /// Check that this install works
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(
+        after_help = "Example:\n  tpt-policy doctor\n\nRun this first after installing. It exits 5 if a required check fails."
+    )]
     Doctor,
 }
 

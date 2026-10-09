@@ -29,11 +29,32 @@ mod serve;
 const EXIT_IO: u8 = 1;
 const EXIT_USAGE: u8 = 2;
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-invoice validate examples/invoices/invoice-ok.json --schema examples/invoices/invoice.schema.yaml --policy examples/invoices/invoice.policy.yaml --suppliers examples/invoices/suppliers.json
+  tpt-invoice serve --schema examples/invoices/invoice.schema.yaml
+
+Checks arithmetic (line totals, tax, grand total), approved suppliers and duplicate invoices.
+
+Exit codes (not every command uses every code):
+  0   Success. For a decision: approved
+  1   A file could not be read or written
+  2   A policy, schema or pipeline file is invalid, or the command line is wrong
+  3   The input is not valid JSON or is too large
+  4   One or more inline tests failed
+  5   doctor found a failed check
+  10  Decision: approval required
+  20  Decision: review
+  30  Decision: rejected
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
 #[derive(Parser)]
 #[command(
     name = "tpt-invoice",
     version,
-    about = "Check invoices for arithmetic, supplier and duplicate problems"
+    about = "Check invoices for arithmetic, supplier and duplicate problems",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -45,50 +66,55 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Check one or more invoices (JSON, XML or CSV)
+    #[command(
+        after_help = "Examples:\n  tpt-invoice validate examples/invoices/invoice-ok.json --schema examples/invoices/invoice.schema.yaml\n  tpt-invoice validate examples/invoices/batch.csv --schema examples/invoices/invoice.schema.yaml --ledger processed.jsonl --out results\n\nThe ledger remembers accepted invoices. An invoice that is already in it is rejected as a duplicate, so run the same batch twice and the second run flags it."
+    )]
     Validate {
-        /// Invoice files: .json or .xml (one invoice each), or .csv (one row per invoice line)
-        #[arg(required = true)]
+        /// Invoices to check: .json or .xml (one invoice each), or .csv (one row per invoice line). Give several at once
+        #[arg(required = true, value_name = "INVOICE")]
         invoices: Vec<PathBuf>,
-        /// Schema for the invoice header fields (YAML)
+        /// The schema (YAML) for the invoice header fields, such as number, date and supplier
         #[arg(long, value_name = "FILE")]
         schema: PathBuf,
-        /// Optional business policy (YAML). Invoices that pass the checks are evaluated against it.
+        /// Optional business policy (YAML). Invoices that pass the checks are also evaluated against it
         #[arg(long, value_name = "FILE")]
         policy: Option<PathBuf>,
-        /// Optional list of approved supplier tax IDs (JSON array)
+        /// Optional JSON array of approved supplier tax IDs. Invoices from other suppliers are flagged
         #[arg(long, value_name = "FILE")]
         suppliers: Option<PathBuf>,
-        /// Optional ledger of processed invoices (JSON lines). Duplicates are rejected,
-        /// and each accepted invoice is added. The file is created if missing.
+        /// Optional JSON lines file of processed invoices. Duplicates are rejected, and each accepted invoice is added. Created if missing
         #[arg(long, value_name = "FILE")]
         ledger: Option<PathBuf>,
-        /// Write one result file per invoice into this folder, as <name>.result.json
+        /// Folder for one <name>.result.json per invoice. Created if missing
         #[arg(long, value_name = "DIR")]
         out: Option<PathBuf>,
     },
     /// Serve invoice checks over HTTP (POST /v1/validate)
+    #[command(
+        after_help = "Examples:\n  tpt-invoice serve --schema examples/invoices/invoice.schema.yaml\n  TPT_INVOICE_TOKEN=change-me tpt-invoice serve --schema invoice.schema.yaml --listen 0.0.0.0:8080 --ledger ledger.jsonl\n\nListens on 127.0.0.1:8080 by default. Requests are limited to 1 MB. The ledger is shared by all requests."
+    )]
     Serve {
-        /// Schema for the invoice header fields (YAML)
+        /// The schema (YAML) for the invoice header fields
         #[arg(long, value_name = "FILE")]
         schema: PathBuf,
         /// Optional business policy (YAML)
         #[arg(long, value_name = "FILE")]
         policy: Option<PathBuf>,
-        /// Optional list of approved supplier tax IDs (JSON array)
+        /// Optional JSON array of approved supplier tax IDs
         #[arg(long, value_name = "FILE")]
         suppliers: Option<PathBuf>,
-        /// Optional ledger of processed invoices (JSON lines), shared by all requests
+        /// Optional JSON lines ledger of processed invoices, shared by all requests
         #[arg(long, value_name = "FILE")]
         ledger: Option<PathBuf>,
-        /// Address to listen on. Defaults to localhost only.
-        #[arg(long, default_value = "127.0.0.1:8080")]
+        /// Address and port to listen on. The default only accepts connections from this machine
+        #[arg(long, default_value = "127.0.0.1:8080", value_name = "ADDR")]
         listen: String,
-        /// Bearer token required on POST /v1/validate. Read from TPT_INVOICE_TOKEN
-        /// so it does not appear in shell history.
+        /// Bearer token that callers must send. Set TPT_INVOICE_TOKEN instead of passing it here, so it stays out of shell history
         #[arg(long, env = "TPT_INVOICE_TOKEN", hide_env_values = true)]
         token: Option<String>,
     },
-    /// Check that this install works
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(after_help = "Example:\n  tpt-invoice doctor\n\nExits 5 if a required check fails.")]
     Doctor,
 }
 

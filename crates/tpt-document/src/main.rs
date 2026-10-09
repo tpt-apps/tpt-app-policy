@@ -29,11 +29,32 @@ use tpt_schema::{parse_schema, Schema, SCHEMA_ENGINE_VERSION};
 const EXIT_IO: u8 = 1;
 const EXIT_USAGE: u8 = 2;
 
+const AFTER_HELP: &str = "\
+Quick start:
+  tpt-document validate examples/documents/purchase-order.json --schema examples/documents/templates/purchase-order.schema.yaml
+  tpt-document validate examples/documents/invoice.xml --schema examples/documents/templates/invoice.schema.yaml --out results --html
+
+Each document gets PASS, REVIEW or FAIL. Several documents can be checked in one command.
+
+Exit codes (not every command uses every code):
+  0   Success. For a decision: approved
+  1   A file could not be read or written
+  2   A policy, schema or pipeline file is invalid, or the command line is wrong
+  3   The input is not valid JSON or is too large
+  4   One or more inline tests failed
+  5   doctor found a failed check
+  10  Decision: approval required
+  20  Decision: review
+  30  Decision: rejected
+
+Logs (stderr only, never input values): --verbose, --debug, --json-logs.
+Every command has its own --help, with examples.";
 #[derive(Parser)]
 #[command(
     name = "tpt-document",
     version,
-    about = "Check JSON and XML documents against a schema and a policy"
+    about = "Check JSON and XML documents against a schema and a policy",
+    after_help = AFTER_HELP
 )]
 struct Cli {
     #[command(subcommand)]
@@ -45,24 +66,30 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Check one or more documents, and print a PASS, REVIEW or FAIL for each
+    #[command(
+        after_help = "Examples:\n  tpt-document validate examples/documents/purchase-order.json --schema examples/documents/templates/purchase-order.schema.yaml\n  tpt-document validate *.xml --schema shipping.schema.yaml --policy rules.yaml --out results\n\nPASS: passes the schema and the policy. REVIEW: a person should look. FAIL: fails the schema."
+    )]
     Validate {
-        /// Documents to check: .json or .xml
-        #[arg(required = true)]
+        /// The documents to check: .json or .xml. Give several to check them all at once
+        #[arg(required = true, value_name = "DOCUMENT")]
         documents: Vec<PathBuf>,
-        /// Schema file (YAML)
+        /// The schema (YAML) the document must match. Templates are in examples/documents/templates/
         #[arg(long, value_name = "FILE")]
         schema: PathBuf,
-        /// Optional policy file. Documents that pass the schema are evaluated against it.
+        /// Optional policy (YAML). Documents that pass the schema are also evaluated against it
         #[arg(long, value_name = "FILE")]
         policy: Option<PathBuf>,
-        /// Write one result file per document into this folder, as <name>.result.json
+        /// Folder for one <name>.result.json per document. Created if missing
         #[arg(long, value_name = "DIR")]
         out: Option<PathBuf>,
-        /// Also write report.html into the --out folder, a self-contained page for people to read
+        /// Also write report.html into the --out folder: one page for people to read and file. Needs --out
         #[arg(long, requires = "out")]
         html: bool,
     },
-    /// Check that this install works
+    /// Check that this install works: version, platform, folders and a self-test
+    #[command(
+        after_help = "Example:\n  tpt-document doctor\n\nExits 5 if a required check fails."
+    )]
     Doctor,
 }
 

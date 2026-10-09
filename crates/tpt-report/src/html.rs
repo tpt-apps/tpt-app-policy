@@ -52,8 +52,8 @@ pub fn data_report_html(report: &DataReport) -> String {
     let _ = writeln!(
         out,
         "<section class=\"meta\"><dl>\
-         <dt>Input</dt><dd>{} ({})</dd>\
-         <dt>Schema</dt><dd>{} {}</dd>",
+         <dt><abbr title=\"The file that was checked, and its format\">Input</abbr></dt><dd>{} ({})</dd>\
+         <dt><abbr title=\"The schema the records were checked against: the fields, types and required values\">Schema</abbr></dt><dd>{} {}</dd>",
         escape(&report.input_file),
         escape(&report.input_format),
         escape(&report.schema_name),
@@ -62,23 +62,23 @@ pub fn data_report_html(report: &DataReport) -> String {
     if let Some((name, version)) = &report.policy {
         let _ = writeln!(
             out,
-            "<dt>Policy</dt><dd>{} {}</dd>",
+            "<dt><abbr title=\"The policy the records were evaluated against\">Policy</abbr></dt><dd>{} {}</dd>",
             escape(name),
             escape(version)
         );
     }
     let _ = writeln!(
         out,
-        "<dt>Input SHA-256</dt><dd><code>{}</code></dd></dl></section>",
+        "<dt><abbr title=\"A fingerprint of the input file. The same file always gives the same value\">Input SHA-256</abbr></dt><dd><code>{}</code></dd></dl></section>",
         escape(&report.input_sha256)
     );
 
     let _ = writeln!(
         out,
         "<section class=\"counts\">\
-         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\">processed</span></div>\
-         <div class=\"tile ok\"><span class=\"n\">{}</span><span class=\"l\">valid</span></div>\
-         <div class=\"tile bad\"><span class=\"n\">{}</span><span class=\"l\">invalid</span></div>\
+         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\"><abbr title=\"Every record in the file\">processed</abbr></span></div>\
+         <div class=\"tile ok\"><span class=\"n\">{}</span><span class=\"l\"><abbr title=\"Records that match the schema\">valid</abbr></span></div>\
+         <div class=\"tile bad\"><span class=\"n\">{}</span><span class=\"l\"><abbr title=\"Records that break the schema. Their errors are listed by field below, and they are in the invalid file\">invalid</abbr></span></div>\
          </section>",
         group(report.processed),
         group(report.valid),
@@ -86,7 +86,7 @@ pub fn data_report_html(report: &DataReport) -> String {
     );
 
     if !report.errors_by_field.is_empty() {
-        out.push_str("<section>\n<h2>Errors by field</h2>\n<table>\n<tr><th>Field</th><th>Errors</th></tr>\n");
+        out.push_str("<section>\n<h2>Errors by field</h2>\n<table>\n<tr><th><abbr title=\"The field the error is about\">Field</abbr></th><th><abbr title=\"How many records have a problem with this field\">Errors</abbr></th></tr>\n");
         for (field, count) in &report.errors_by_field {
             let _ = writeln!(
                 out,
@@ -194,7 +194,7 @@ pub fn document_report_html(report: &DocumentReport) -> String {
     if let Some((name, version)) = &report.policy {
         let _ = writeln!(
             out,
-            "<dt>Policy</dt><dd>{} {}</dd>",
+            "<dt><abbr title=\"The policy the records were evaluated against\">Policy</abbr></dt><dd>{} {}</dd>",
             escape(name),
             escape(version)
         );

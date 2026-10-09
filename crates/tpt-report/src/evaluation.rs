@@ -26,9 +26,9 @@ pub fn evaluation_html(evaluation: &Evaluation) -> String {
     let _ = writeln!(
         out,
         "<section class=\"meta\"><dl>\
-         <dt>Policy</dt><dd>{}</dd>\
-         <dt>Input SHA-256</dt><dd><code>{}</code></dd>\
-         <dt>Engine</dt><dd>tpt-policy {}</dd>\
+         <dt><abbr title=\"The policy file and its version that made this decision\">Policy</abbr></dt><dd>{}</dd>\
+         <dt><abbr title=\"A fingerprint of the input. The same input always gives the same value. The input itself is not stored in this report\">Input SHA-256</abbr></dt><dd><code>{}</code></dd>\
+         <dt><abbr title=\"The version of the rules engine that ran the policy\">Engine</abbr></dt><dd>tpt-policy {}</dd>\
          </dl></section>",
         escape(&evaluation.policy.id()),
         escape(&evaluation.input_sha256),
@@ -38,10 +38,10 @@ pub fn evaluation_html(evaluation: &Evaluation) -> String {
     let _ = writeln!(
         out,
         "<section class=\"counts four\">\
-         <div class=\"tile {}\"><span class=\"n\">{}</span><span class=\"l\">decision</span></div>\
-         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\">matched rules</span></div>\
-         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\">approvers</span></div>\
-         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\">failed rules</span></div>\
+         <div class=\"tile {}\"><span class=\"n\">{}</span><span class=\"l\"><abbr title=\"The outcome. approved: no action needed. review: a person should look. approval_required: someone must approve. rejected: do not proceed\">decision</abbr></span></div>\
+         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\"><abbr title=\"Rules whose conditions the input met\">matched rules</abbr></span></div>\
+         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\"><abbr title=\"The people or roles who must approve, from the matched rules\">approvers</abbr></span></div>\
+         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\"><abbr title=\"Rules whose conditions the input did not meet. Listed below with the first check that failed\">failed rules</abbr></span></div>\
          </section>",
         tile_class(decision),
         escape(decision.as_str()),
@@ -68,7 +68,7 @@ pub fn evaluation_html(evaluation: &Evaluation) -> String {
             "<p class=\"note\">No rule matched, so the policy's default decision applies.</p>\n",
         );
     } else {
-        out.push_str("<table>\n<thead><tr><th>Rule</th><th>Decision</th><th>Why</th></tr></thead>\n<tbody>\n");
+        out.push_str("<table>\n<thead><tr><th><abbr title=\"The rule's id in the policy file\">Rule</abbr></th><th><abbr title=\"The decision this rule gives when it matches\">Decision</abbr></th><th><abbr title=\"What the rule says, in the policy's own words\">Why</abbr></th></tr></thead>\n<tbody>\n");
         for explanation in &evaluation.explanations {
             let _ = writeln!(
                 out,
@@ -83,7 +83,7 @@ pub fn evaluation_html(evaluation: &Evaluation) -> String {
     }
 
     if !evaluation.failed_rules.is_empty() {
-        out.push_str("<h2>Rules that did not match</h2>\n<table>\n<thead><tr><th>Rule</th><th>First failed check</th></tr></thead>\n<tbody>\n");
+        out.push_str("<h2>Rules that did not match</h2>\n<table>\n<thead><tr><th><abbr title=\"The rule's id in the policy file\">Rule</abbr></th><th><abbr title=\"The first condition in the rule that the input did not meet. Fix the input or the rule to change the outcome\">First failed check</abbr></th></tr></thead>\n<tbody>\n");
         for failed in &evaluation.failed_rules {
             let _ = writeln!(
                 out,
