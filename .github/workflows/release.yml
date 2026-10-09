@@ -24,7 +24,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --workspace
-      - run: scripts/package.sh
+      # Every product, so a missing one fails the release. Bundles are unsigned:
+      # SHA256SUMS is the integrity check.
+      - name: Build bundles
+        run: |
+          for product in policy data document invoice transform approve evidence ai-guard secure-run; do
+            scripts/package.sh "$product"
+          done
+      - name: Smoke-test bundles
+        run: scripts/smoke-bundles.sh
       - uses: actions/upload-artifact@v4
         with:
           name: bundle-${{ matrix.os }}

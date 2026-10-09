@@ -24,3 +24,29 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+
+  bundles:
+    needs: test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # Every product, so a missing one fails the build. Bundles are unsigned:
+      # the SHA256SUMS file is the integrity check.
+      - name: Build bundles
+        run: |
+          for product in policy data document invoice transform approve evidence ai-guard secure-run; do
+            scripts/package.sh "$product"
+          done
+      - name: Smoke-test bundles
+        run: scripts/smoke-bundles.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundles-${{ matrix.os }}
+          path: dist/*.tar.gz
