@@ -8,7 +8,9 @@ pub mod html;
 
 use tpt_policy_core::Evaluation;
 
-pub use html::{data_report_html, DataReport, ReportRow};
+pub use html::{
+    data_report_html, document_report_html, DataReport, DocumentReport, DocumentRow, ReportRow,
+};
 
 /// Render an evaluation as pretty-printed JSON, the format `check` and `run` print.
 pub fn json(evaluation: &Evaluation) -> String {

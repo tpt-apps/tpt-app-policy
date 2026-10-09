@@ -17,6 +17,7 @@ path = "src/main.rs"
 [dependencies]
 tpt-schema.workspace = true
 tpt-policy-core.workspace = true
+tpt-report.workspace = true
 quick-xml.workspace = true
 serde.workspace = true
 serde_json.workspace = true

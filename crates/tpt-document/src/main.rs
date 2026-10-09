@@ -22,6 +22,7 @@ use tpt_document::{
     check_document, file_sha256, read_document, DocError, DocFormat, DocResult, Parsed, Verdict,
 };
 use tpt_policy_core::{parse_policy, Policy};
+use tpt_report::{document_report_html, DocumentReport, DocumentRow};
 use tpt_schema::{parse_schema, Schema, SCHEMA_ENGINE_VERSION};
 
 const EXIT_IO: u8 = 1;
@@ -54,6 +55,9 @@ enum Command {
         /// Write one result file per document into this folder, as <name>.result.json
         #[arg(long, value_name = "DIR")]
         out: Option<PathBuf>,
+        /// Also write report.html into the --out folder, a self-contained page for people to read
+        #[arg(long, requires = "out")]
+        html: bool,
     },
     /// Check that this install works
     Doctor,
@@ -66,7 +70,8 @@ fn main() -> ExitCode {
             schema,
             policy,
             out,
-        } => validate(&documents, &schema, policy.as_deref(), out.as_deref()),
+            html,
+        } => validate(&documents, &schema, policy.as_deref(), out.as_deref(), html),
         Command::Doctor => doctor(),
     };
     ExitCode::from(code)
@@ -77,6 +82,7 @@ fn validate(
     schema_path: &Path,
     policy_path: Option<&Path>,
     out: Option<&Path>,
+    html: bool,
 ) -> u8 {
     let schema = match load_schema(schema_path) {
         Ok(s) => s,
@@ -97,6 +103,7 @@ fn validate(
     }
 
     let mut worst = Verdict::Pass;
+    let mut rows = Vec::new();
     for document in documents {
         let parsed = match read_document(document) {
             Ok(p) => p,
@@ -125,8 +132,65 @@ fn validate(
                 return code;
             }
         }
+        if html {
+            rows.push(document_row(document, &parsed, &result));
+        }
+    }
+    if let (true, Some(dir)) = (html, out) {
+        let report = DocumentReport {
+            schema_name: schema.name.clone(),
+            schema_version: schema.version.clone(),
+            policy: policy.as_ref().map(|p| (p.name.clone(), p.version.clone())),
+            tool_version: env!("CARGO_PKG_VERSION").to_string(),
+            documents: rows,
+        };
+        let path = dir.join("report.html");
+        if let Err(e) = fs::write(&path, document_report_html(&report)) {
+            eprintln!(
+                "error: cannot write '{}': {e}\n  fix: check the folder is writable",
+                path.display()
+            );
+            return EXIT_IO;
+        }
     }
     worst.exit_code()
+}
+
+fn document_row(document: &Path, parsed: &Parsed, result: &DocResult) -> DocumentRow {
+    let format = match parsed {
+        Parsed::Ok { format, .. } | Parsed::Malformed { format, .. } => *format,
+    };
+    DocumentRow {
+        file: document
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default(),
+        format: format.name().to_string(),
+        verdict: result.verdict.label().to_string(),
+        decision: result.evaluation.as_ref().map(|ev| {
+            if ev.approvers.is_empty() {
+                ev.decision.to_string()
+            } else {
+                format!("{}, approvers: {}", ev.decision, ev.approvers.join(", "))
+            }
+        }),
+        schema_errors: result
+            .schema_errors
+            .iter()
+            .map(|e| (e.field.clone(), e.reason.clone()))
+            .collect(),
+        explanations: result
+            .evaluation
+            .iter()
+            .flat_map(|ev| &ev.explanations)
+            .map(|x| (x.rule.clone(), x.decision.to_string(), x.message.clone()))
+            .collect(),
+        warnings: result
+            .evaluation
+            .iter()
+            .flat_map(|ev| ev.warnings.clone())
+            .collect(),
+    }
 }
 
 fn load_schema(path: &Path) -> Result<Schema, u8> {

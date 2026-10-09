@@ -239,6 +239,47 @@ fn cli_writes_one_result_file_per_document() {
 }
 
 #[test]
+fn cli_html_writes_a_self_contained_report() {
+    let dir = std::env::temp_dir().join(format!("tpt-doc-html-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let out = run(&[
+        "validate",
+        example("invoice.xml").to_str().unwrap(),
+        example("invoice-bad.json").to_str().unwrap(),
+        "--schema",
+        example("templates/invoice.schema.yaml").to_str().unwrap(),
+        "--policy",
+        example("templates/invoice.policy.yaml").to_str().unwrap(),
+        "--out",
+        dir.to_str().unwrap(),
+        "--html",
+    ]);
+    assert_eq!(
+        code(&out),
+        30,
+        "one document failed, so the worst verdict is FAIL"
+    );
+    let html = std::fs::read_to_string(dir.join("report.html")).expect("report written");
+    assert!(html.contains("Document validation report"));
+    assert!(html.contains("invoice-bad.json"));
+    assert!(html.contains("invoice.xml"));
+    assert!(!html.contains("<script"), "no scripts");
+    assert!(!html.contains("https://"), "no external links");
+}
+
+#[test]
+fn cli_html_needs_an_out_folder() {
+    let out = run(&[
+        "validate",
+        example("invoice.xml").to_str().unwrap(),
+        "--schema",
+        example("templates/invoice.schema.yaml").to_str().unwrap(),
+        "--html",
+    ]);
+    assert_eq!(code(&out), 2, "clap rejects --html without --out");
+}
+
+#[test]
 fn cli_result_is_byte_identical_across_runs() {
     let read = || {
         let out = run(&[

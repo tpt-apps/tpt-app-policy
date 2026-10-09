@@ -139,6 +139,163 @@ pub fn data_report_html(report: &DataReport) -> String {
     out
 }
 
+/// One document in the document report.
+#[derive(Debug, Clone, Default)]
+pub struct DocumentRow {
+    pub file: String,
+    pub format: String,
+    /// `PASS`, `REVIEW` or `FAIL`.
+    pub verdict: String,
+    /// The policy decision, with approvers, when a policy was evaluated.
+    pub decision: Option<String>,
+    /// `(field, reason)` pairs from the schema check.
+    pub schema_errors: Vec<(String, String)>,
+    /// `(rule, decision, message)` triples from the policy.
+    pub explanations: Vec<(String, String, String)>,
+    pub warnings: Vec<String>,
+}
+
+/// Everything the document report shows.
+#[derive(Debug, Clone, Default)]
+pub struct DocumentReport {
+    pub schema_name: String,
+    pub schema_version: String,
+    pub policy: Option<(String, String)>,
+    pub tool_version: String,
+    pub documents: Vec<DocumentRow>,
+}
+
+/// Render the document report as one HTML document.
+pub fn document_report_html(report: &DocumentReport) -> String {
+    let count = |verdict: &str| {
+        report
+            .documents
+            .iter()
+            .filter(|d| d.verdict == verdict)
+            .count() as u64
+    };
+    let mut out = String::new();
+    let _ = write!(
+        out,
+        "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n\
+         <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\
+         <title>Document validation: {}</title>\n<style>{CSS}</style>\n</head>\n<body>\n\
+         <main>\n<h1>Document validation report</h1>\n",
+        escape(&report.schema_name)
+    );
+
+    let _ = writeln!(
+        out,
+        "<section class=\"meta\"><dl>\
+         <dt>Schema</dt><dd>{} {}</dd>",
+        escape(&report.schema_name),
+        escape(&report.schema_version),
+    );
+    if let Some((name, version)) = &report.policy {
+        let _ = writeln!(
+            out,
+            "<dt>Policy</dt><dd>{} {}</dd>",
+            escape(name),
+            escape(version)
+        );
+    }
+    let _ = writeln!(
+        out,
+        "<dt>Tool</dt><dd>tpt-document {}</dd></dl></section>",
+        escape(&report.tool_version)
+    );
+
+    let _ = writeln!(
+        out,
+        "<section class=\"counts four\">\
+         <div class=\"tile\"><span class=\"n\">{}</span><span class=\"l\">documents</span></div>\
+         <div class=\"tile ok\"><span class=\"n\">{}</span><span class=\"l\">pass</span></div>\
+         <div class=\"tile warn\"><span class=\"n\">{}</span><span class=\"l\">review</span></div>\
+         <div class=\"tile bad\"><span class=\"n\">{}</span><span class=\"l\">fail</span></div>\
+         </section>",
+        group(report.documents.len() as u64),
+        group(count("PASS")),
+        group(count("REVIEW")),
+        group(count("FAIL")),
+    );
+
+    out.push_str("<section>\n<h2>Documents</h2>\n<table>\n<tr><th>Document</th><th>Verdict</th><th>Decision</th></tr>\n");
+    for doc in &report.documents {
+        let _ = writeln!(
+            out,
+            "<tr><td><code>{}</code></td><td><span class=\"badge {}\">{}</span></td><td>{}</td></tr>",
+            escape(&doc.file),
+            verdict_class(&doc.verdict),
+            escape(&doc.verdict),
+            escape(doc.decision.as_deref().unwrap_or("not evaluated")),
+        );
+    }
+    out.push_str("</table>\n</section>\n");
+
+    out.push_str("<section>\n<h2>Details</h2>\n");
+    for doc in &report.documents {
+        let _ = writeln!(
+            out,
+            "<article><h3><code>{}</code> <span class=\"badge {}\">{}</span></h3>\
+             <p class=\"note\">Format: {}</p>",
+            escape(&doc.file),
+            verdict_class(&doc.verdict),
+            escape(&doc.verdict),
+            escape(&doc.format),
+        );
+        if !doc.schema_errors.is_empty() {
+            out.push_str("<h4>Schema errors</h4><ul>\n");
+            for (field, reason) in &doc.schema_errors {
+                let _ = writeln!(
+                    out,
+                    "<li><code>{}</code>: {}</li>",
+                    escape(field),
+                    escape(reason)
+                );
+            }
+            out.push_str("</ul>\n");
+        }
+        if !doc.explanations.is_empty() {
+            out.push_str("<h4>Policy rules</h4><ul>\n");
+            for (rule, decision, message) in &doc.explanations {
+                let _ = writeln!(
+                    out,
+                    "<li><code>{}</code> ({}): {}</li>",
+                    escape(rule),
+                    escape(decision),
+                    escape(message)
+                );
+            }
+            out.push_str("</ul>\n");
+        }
+        if !doc.warnings.is_empty() {
+            out.push_str("<h4>Warnings</h4><ul>\n");
+            for warning in &doc.warnings {
+                let _ = writeln!(out, "<li>{}</li>", escape(warning));
+            }
+            out.push_str("</ul>\n");
+        }
+        if doc.schema_errors.is_empty() && doc.explanations.is_empty() && doc.warnings.is_empty() {
+            out.push_str("<p class=\"note\">No problems found.</p>\n");
+        }
+        out.push_str("</article>\n");
+    }
+    out.push_str("</section>\n");
+
+    out.push_str("</main>\n</body>\n</html>\n");
+    out
+}
+
+/// CSS class for a verdict badge.
+fn verdict_class(verdict: &str) -> &'static str {
+    match verdict {
+        "PASS" => "ok",
+        "REVIEW" => "warn",
+        "FAIL" => "bad",
+        _ => "",
+    }
+}
+
 /// Escape text for an HTML element or a double-quoted attribute.
 pub fn escape(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
@@ -170,12 +327,12 @@ fn group(n: u64) -> String {
 
 const CSS: &str = "\
 :root{--fg:#1d2330;--muted:#5b6475;--bg:#f7f8fa;--card:#ffffff;--line:#d9dde5;\
---ok:#1e7a46;--ok-bg:#e7f5ec;--bad:#a12626;--bad-bg:#fbeaea;--code:#eef1f5}\
+--ok:#1e7a46;--ok-bg:#e7f5ec;--warn:#8a5a00;--warn-bg:#fff4dc;--bad:#a12626;--bad-bg:#fbeaea;--code:#eef1f5}\
 @media (prefers-color-scheme: dark){:root:not([data-theme=\"light\"]){\
 --fg:#e8ebf0;--muted:#a3acbb;--bg:#15181e;--card:#1e222b;--line:#2f3542;\
---ok:#6fd38f;--ok-bg:#1d3327;--bad:#ff8a8a;--bad-bg:#3a2222;--code:#2a2f3a}}\
+--ok:#6fd38f;--ok-bg:#1d3327;--bad:#ff8a8a;--bad-bg:#3a2222;--warn:#f5c063;--warn-bg:#3a2f18;--code:#2a2f3a}}\
 :root[data-theme=\"dark\"]{--fg:#e8ebf0;--muted:#a3acbb;--bg:#15181e;--card:#1e222b;\
---line:#2f3542;--ok:#6fd38f;--ok-bg:#1d3327;--bad:#ff8a8a;--bad-bg:#3a2222;--code:#2a2f3a}\
+--line:#2f3542;--ok:#6fd38f;--warn:#f5c063;--warn-bg:#3a2f18;--ok-bg:#1d3327;--bad:#ff8a8a;--bad-bg:#3a2222;--code:#2a2f3a}\
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,\
 Segoe UI,Roboto,sans-serif}\
 main{max-width:52rem;margin:0 auto;padding:1.5rem 1rem}\
@@ -199,7 +356,14 @@ article{background:var(--card);border:1px solid var(--line);border-radius:8px;\
 padding:.6rem .9rem;margin-bottom:.5rem}\
 ul{margin:.3rem 0 0;padding-left:1.2rem}\
 .note{color:var(--muted)}\
-@media (max-width:480px){.counts{grid-template-columns:1fr}dl{grid-template-columns:1fr}dt{margin-top:.4rem}}\
+.tile.warn{background:var(--warn-bg)}.tile.warn .n{color:var(--warn)}\
+.counts.four{grid-template-columns:repeat(4,1fr)}\
+.badge{display:inline-block;padding:.05rem .5rem;border-radius:999px;font-size:.85rem;\
+font-weight:600;background:var(--code)}\
+.badge.ok{background:var(--ok-bg);color:var(--ok)}.badge.warn{background:var(--warn-bg);color:var(--warn)}\
+.badge.bad{background:var(--bad-bg);color:var(--bad)}\
+h4{font-size:.95rem;margin:.7rem 0 .2rem}\
+@media (max-width:480px){.counts{grid-template-columns:1fr}.counts.four{grid-template-columns:repeat(2,1fr)}dl{grid-template-columns:1fr}dt{margin-top:.4rem}}\
 ";
 
 #[cfg(test)]
@@ -251,5 +415,53 @@ mod tests {
             html.contains("1 more invalid records"),
             "omitted count shown"
         );
+    }
+
+    fn document_sample() -> DocumentReport {
+        DocumentReport {
+            schema_name: "invoice".into(),
+            schema_version: "1.0.0".into(),
+            policy: Some(("invoice-approval".into(), "1.0.0".into())),
+            tool_version: "2026.1.0".into(),
+            documents: vec![
+                DocumentRow {
+                    file: "ok.xml".into(),
+                    format: "xml".into(),
+                    verdict: "PASS".into(),
+                    decision: Some("approved".into()),
+                    ..DocumentRow::default()
+                },
+                DocumentRow {
+                    file: "<bad>.json".into(),
+                    format: "json".into(),
+                    verdict: "FAIL".into(),
+                    schema_errors: vec![("currency".into(), "'XYZ' is not valid".into())],
+                    ..DocumentRow::default()
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn document_page_counts_verdicts_and_escapes_values() {
+        let html = document_report_html(&document_sample());
+        assert!(html.contains("&lt;bad&gt;.json"), "file name escaped");
+        assert!(
+            html.contains("&#39;XYZ&#39; is not valid"),
+            "reason escaped"
+        );
+        assert!(!html.contains("<script"), "no script tags");
+        assert!(
+            !html.contains("http://") && !html.contains("https://"),
+            "no external links"
+        );
+        assert!(
+            html.contains("not evaluated"),
+            "document without a policy decision"
+        );
+        assert!(html.contains("<span class=\"n\">2</span><span class=\"l\">documents</span>"));
+        assert!(html.contains("<span class=\"n\">1</span><span class=\"l\">pass</span>"));
+        assert!(html.contains("<span class=\"n\">0</span><span class=\"l\">review</span>"));
+        assert!(html.contains("<span class=\"n\">1</span><span class=\"l\">fail</span>"));
     }
 }

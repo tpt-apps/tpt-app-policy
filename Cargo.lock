@@ -478,6 +478,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "tpt-policy-core",
+ "tpt-report",
  "tpt-schema",
 ]
 

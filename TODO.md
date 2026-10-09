@@ -175,7 +175,7 @@ Status: the core of 0.1 is built and tested (35 tests, clippy clean). Items left
 - [x] CLI `tpt-document`; `doctor`; Docker image `tpt/document` (`Dockerfile.document`). **Done:** `validate` (several files, exit code = worst verdict, `--out` for per-document JSON), `doctor`, and Docker tested on Windows (Docker Desktop).
 - [~] Docs, examples, landing page, Gumroad listing. **Done:** `docs/DOCUMENT_VALIDATOR.md`, examples. **Missing:** landing page, Gumroad listing.
 - [~] Windows + Linux release bundle. `scripts/package.sh document` builds it. **Done:** Windows (Git Bash). **Done:** Linux (container). **Missing:** a clean-machine Linux install.
-- [ ] HTML report for documents (not started; `tpt-report` has the data-validation page to base it on)
+- [x] HTML report for documents. `tpt-document validate --html --out DIR` writes `report.html`: verdict counts, a document table, and each document's schema errors and policy rules. Same page rules as the data report (no scripts, escaped values, light and dark themes). Checked with a headless Edge screenshot (light theme). Dark theme not yet looked at.
 - [ ] Tag **Document Validator 1.0**
 
 ## Phase 5 — Vertical → TPT Invoice Validator

@@ -40,7 +40,7 @@ field `(document)`.
 
 ## Command
 
-### `validate <documents>... --schema FILE [--policy FILE] [--out DIR]`
+### `validate <documents>... --schema FILE [--policy FILE] [--out DIR] [--html]`
 
 | Argument or flag | Meaning |
 |---|---|
@@ -48,6 +48,7 @@ field `(document)`.
 | `--schema FILE` | Required. The schema, in YAML. |
 | `--policy FILE` | Optional. A policy from `tpt-policy`. Documents that pass the schema are evaluated against it. |
 | `--out DIR` | Optional. Writes one `<name>.result.json` per document. |
+| `--html` | Optional. Also writes `report.html` into the `--out` folder. Needs `--out`. |
 
 Each document prints one line: the verdict, the file, and for a policy result,
 the decision and the approvers. Schema errors follow, one per line.
@@ -104,6 +105,11 @@ Only XML 1.0 is supported. DTDs and external entities are not read.
 
 ## Output files
 
+With `--html` and `--out DIR`, the folder also gets `report.html`. It is one
+self-contained page for people to read: the verdict counts, a table of
+documents, and each document's schema errors and policy rules. It has no
+scripts and no external links, and every value is escaped. It works offline.
+
 With `--out DIR`, each document gets `<name>.result.json`:
 
 ```json
@@ -149,7 +155,6 @@ Sample documents are in `examples/documents/`:
 
 - XML 1.0 only. No DTDs, namespaces are read as plain names, and no XSD.
 - Each document is loaded whole. There is no streaming.
-- The HTML report and the Docker image are not built yet.
 - Document-level rules across several documents, such as duplicate invoice numbers,
   are not supported. Use `tpt-data` with `unique` for that.
 - The invoice arithmetic check (subtotal, tax and total agreeing) belongs to the
