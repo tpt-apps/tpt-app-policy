@@ -4,3 +4,4 @@
 .DS_Store
 Thumbs.db
 /dist
+/examples/secure-run/out.txt

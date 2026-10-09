@@ -1,0 +1,32 @@
+[package]
+name = "tpt-secure-run"
+description = "TPT Secure Script Runner: runs a WebAssembly script with only the file access its manifest grants"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "tpt-secure-run"
+path = "src/main.rs"
+
+[dependencies]
+tpt-commercial-cli.workspace = true
+tpt-capsec-core.workspace = true
+tpt-primitives.workspace = true
+tpt-runtime-core.workspace = true
+tpt-wasm-runtime.workspace = true
+tpt-wasm-types.workspace = true
+tpt-wasm-format.workspace = true
+tpt-wasm-decode.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+
+[dev-dependencies]
+wat = "1"

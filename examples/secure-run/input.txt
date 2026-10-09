@@ -1,0 +1,4 @@
+supplier,invoice,amount
+ACME,1001,250.00
+Globex,1002,1200.50
+Initech,1003,89.99

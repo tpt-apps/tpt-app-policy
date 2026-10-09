@@ -15,6 +15,7 @@ members = [
     "crates/tpt-evidence",
     "crates/tpt-ai-guard",
     "crates/tpt-policy-wasm",
+    "crates/tpt-secure-run",
 ]
 
 [workspace.package]
@@ -36,6 +37,17 @@ sha2 = "0.11"
 csv = "1"
 quick-xml = "0.42"
 regex = "1"
+
+# TPT-Solutions foundation crates. Not on crates.io, and the repos have no
+# tags, so each is pinned to a commit. Bump a rev deliberately, after reading
+# that repo's changes.
+tpt-capsec-core = { git = "https://github.com/TPT-Solutions/tpt-capsec", rev = "799eeff4a4acd155c112594d62fc140e10038bf3" }
+tpt-primitives = { git = "https://github.com/TPT-Solutions/tpt-primitives", rev = "8f4e27c05db0ba06e38abf20670bacd4058d1554" }
+tpt-runtime-core = { git = "https://github.com/TPT-Solutions/tpt-runtime", rev = "ff4b22e9660c128cb8db5960d18586daf99a39d5" }
+tpt-wasm-runtime = { git = "https://github.com/TPT-Solutions/tpt-wasm", rev = "94eef194c0eca62aa969b47b27d8acf7a354793e" }
+tpt-wasm-types = { git = "https://github.com/TPT-Solutions/tpt-wasm", rev = "94eef194c0eca62aa969b47b27d8acf7a354793e" }
+tpt-wasm-format = { git = "https://github.com/TPT-Solutions/tpt-wasm", rev = "94eef194c0eca62aa969b47b27d8acf7a354793e" }
+tpt-wasm-decode = { git = "https://github.com/TPT-Solutions/tpt-wasm", rev = "94eef194c0eca62aa969b47b27d8acf7a354793e" }
 
 # Internal crates
 tpt-policy-core = { path = "crates/tpt-policy-core" }

@@ -36,6 +36,19 @@ Checked against the default branches of each repo on 2026-10-09.
 2. Should `tpt-policy-core` be independent of `tpt-runtime-policy` / `tpt-mcpbox-policy`? Current assumption: **yes**, to keep the commercial core small and stable (spec §33, "narrow stable dependency layer").
 3. Is `tpt-capsec`'s compile-time model acceptable for plugin sandboxing, given plugins are loaded at runtime?
 
+## Foundation integration (Phase 2)
+
+Pinned once in the workspace `Cargo.toml`. Each repo has no tags, so each is pinned to a commit.
+
+| Crate | Used by | What is used | Not used, and why |
+|---|---|---|---|
+| tpt-capsec-core | tpt-ai-guard, tpt-secure-run | Scope checks; `RootCapability` and `FsReadToken` | `tpt-capsec` wrapper crate. Its checks are a convention in our code, not an OS barrier. |
+| tpt-primitives | tpt-secure-run | `ArtifactId` for module identity | Policy hashing stays on `sha2`. The output is identical, so moving it would only churn code. |
+| tpt-runtime-core | tpt-secure-run | `WorkloadState` lifecycle table | `tpt-runtime-policy`: it overlaps `tpt-policy-core`, and we keep the commercial core independent. |
+| tpt-wasm-runtime, -types, -format, -decode | tpt-secure-run | Deterministic engine, limits, module decode and imports | Its full compiler crates and the `tpt-wasm` host, which the runner does not need. |
+
+The dependency tree has no HTTP or TLS client (checked with `cargo tree`).
+
 ## Non-goals
 
 See spec §42. In short: no SaaS control plane, no hosted databases, no

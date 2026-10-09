@@ -1,0 +1,19 @@
+# Permission manifest for count-lines.wasm.
+#
+# A script has no authority unless it is listed here. The script refers to
+# files by position: handle 0 is the first fs_read entry, and so on.
+# Relative paths are taken from this file's folder.
+name: count-lines
+
+resources:
+  fs_read:
+    - name: input
+      path: input.txt
+  fs_write:
+    - name: copy
+      path: out.txt
+
+limits:
+  max_steps: 10000000
+  max_memory_pages: 16
+  max_call_depth: 256

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Builds a release bundle in the layout from spec §23 and writes checksums (§40).
 #
-# Usage: scripts/package.sh [policy|data|document|invoice|transform|approve|evidence|ai-guard]
+# Usage: scripts/package.sh [policy|data|document|invoice|transform|approve|evidence|ai-guard|secure-run]
 #   policy (default): TPT App Policy, binary tpt-policy
 #   data:             TPT Data Validator, binary tpt-data
 #   document:         TPT Document Validator, binary tpt-document
@@ -10,6 +10,7 @@
 #   approve:          TPT Approval Engine, binary tpt-approve
 #   evidence:         TPT Compliance Evidence Processor, binary tpt-evidence
 #   ai-guard:         TPT AI Action Guard, binary tpt-ai-guard
+#   secure-run:       TPT Secure Script Runner, binary tpt-secure-run
 #
 # Output: dist/<name>-<version>-<platform>.tar.gz, and dist/SHA256SUMS listing
 # every archive in dist/.
@@ -61,9 +62,14 @@ case "$PRODUCT" in
         BINARY=tpt-approve
         NAME_PREFIX=tpt-approve
         ;;
+    secure-run)
+        CRATE=tpt-secure-run
+        BINARY=tpt-secure-run
+        NAME_PREFIX=tpt-secure-run
+        ;;
     *)
         echo "error: unknown product '$PRODUCT'" >&2
-        echo "  fix: use 'policy', 'data', 'document', 'invoice', 'transform', 'approve', 'evidence' or 'ai-guard'" >&2
+        echo "  fix: use 'policy', 'data', 'document', 'invoice', 'transform', 'approve', 'evidence', 'ai-guard' or 'secure-run'" >&2
         exit 1
         ;;
 esac
@@ -136,6 +142,14 @@ elif [ "$PRODUCT" = evidence ]; then
     mkdir -p "$BUNDLE/examples"
     cp -R examples/evidence/. "$BUNDLE/examples/"
     for doc in COMPLIANCE_EVIDENCE SECURITY; do
+        cp "docs/$doc.md" "$BUNDLE/docs/"
+    done
+    cp CHANGELOG.md "$BUNDLE/"
+elif [ "$PRODUCT" = secure-run ]; then
+    mkdir -p "$BUNDLE/examples"
+    cp -R examples/secure-run/. "$BUNDLE/examples/"
+    rm -f "$BUNDLE/examples/out.txt"
+    for doc in SECURE_SCRIPT_RUNNER SECURITY; do
         cp "docs/$doc.md" "$BUNDLE/docs/"
     done
     cp CHANGELOG.md "$BUNDLE/"

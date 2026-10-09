@@ -1,0 +1,6 @@
+# The same script as manifest.yaml, with no file access granted.
+#
+# count-lines.wasm imports fs_open_read, fs_size, fs_byte and fs_write_byte.
+# The runner refuses it before it runs, because none of those imports is
+# granted. Expect exit code 7.
+name: count-lines-no-grants
